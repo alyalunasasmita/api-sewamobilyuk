@@ -55,7 +55,7 @@ Route::middleware(['role:customer'])->group(function(){
     Route::patch('/cancel-reserv/{id}', [ReservationsController::class, 'cancel']);
 
     //pembayaran 
-    Route::post('/payment', [PaymentsController::class, '']); 
+    Route::post('/payment', [PaymentsController::class, 'store']); 
     Route::get('/xendit/webhook', [PaymentsController::class, 'webhook']);
 
 });
