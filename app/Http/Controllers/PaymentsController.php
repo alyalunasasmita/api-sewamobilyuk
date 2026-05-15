@@ -55,7 +55,7 @@ class PaymentsController extends Controller
 
         $invoice = $apiInstance->createInvoice($params);
 
-        Payments::create([
+        Payment::create([
             'external_id' => $externalId,
             'amount' => $amount,
             'user_id' => $user->id,
