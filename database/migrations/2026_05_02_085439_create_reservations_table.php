@@ -18,9 +18,8 @@ return new class extends Migration
             $table->date('start_date');
             $table->date('end_date');
             $table->integer('count_days');
-            $table->integer('total_price');
-            $table->enum('payment_status',['pending','paid','failed'])->default('pending');
-            $table->enum('reservations_status',['pending','paid','on-going','completed','cancelled'])->default('pending');
+            $table->decimal('total_price', 12,2);
+            $table->enum('reservations_status',['pending','on-going','completed','cancelled'])->default('pending');
             $table->enum('refund_status',['pending','refunded','failed','none'])->default('none');
             $table->timestamp('cancelled_at')->nullable();
             $table->timestamps();

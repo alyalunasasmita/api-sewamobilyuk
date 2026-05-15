@@ -16,4 +16,8 @@ class Payment extends Model
         'status', 
         'payment_method'
     ];
+
+    function reservation(){
+        return $this->belongsTo(Reservation::class, 'reservations_id');
+    }
 }

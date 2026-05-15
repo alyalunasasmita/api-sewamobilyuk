@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->enum('reservations_status',['pending','paid','on-going','completed','cancelled','rejected'])->default('pending');
+        Schema::table('reservations', function (Blueprint $table) {
+            $table->string('no_reservasi')->nullable()->unique();
         });
     }
 
@@ -21,7 +21,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
+        Schema::table('reservation', function (Blueprint $table) {
             //
         });
     }

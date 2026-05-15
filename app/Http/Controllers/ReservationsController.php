@@ -70,6 +70,10 @@ class ReservationsController extends Controller
             'total_price' =>$total_price,
         ]);
 
+        $reserv->update([
+            'no_reservasi' => 'RSV-' . date('Ymd') . '-' . $reserv->id,
+        ]);
+
         return response()->json([
             'status'=>'success', 
             'data' => $reserv
@@ -81,7 +85,10 @@ class ReservationsController extends Controller
      */
     public function show(Reservations $reservations)
     {
-        //
+        return response()->json([
+            'status' => 'success', 
+            'data' => $reservations
+        ]);
     }
 
     /**
@@ -106,5 +113,23 @@ class ReservationsController extends Controller
     public function destroy(Reservations $reservations)
     {
         //
+    }
+
+    public function cancel($id){
+        $reservation = Reservation::find($id);
+        if(!$reservation){
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'data tidak ditemukan'
+            ]);            
+        }
+        $reservation->update([
+            'reservations_status' => 'cancelled', 
+            'refund_status' => 'pending',
+            'cancelled_at' => now()
+        ]); 
+        return response()->json([
+            'message' => 'Reservasi berhasil dibatalkan'
+        ]);
     }
 }
