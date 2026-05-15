@@ -8,7 +8,7 @@ class Payment extends Model
 {
     protected $fillable = [
         'user_id', 
-        'reservations_id',
+        'reservation_id',
         'no_payment',
         'external_id',
         'invoice_id',
