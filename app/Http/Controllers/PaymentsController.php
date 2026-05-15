@@ -32,7 +32,7 @@ class PaymentsController extends Controller
         $amount = (int) ($reservation->total * 0.11);
 
         $externalId = 'reservation-' . $reservation->id;
-        $noPayment = 'INV-' . time() . $reservation->id;
+        $noPayment = 'INV-' . time() . '-' . $reservation->id;
 
         $apiInstance = new InvoiceApi();
 
@@ -41,6 +41,10 @@ class PaymentsController extends Controller
             'amount' => $amount,
             'description' => 'Pembayaran reservasi mobil berhasil',
             'payer_email' => $user->email,
+            'description' => 'pembayaran reservasi mobil',
+            'currency' => 'IDR', 
+            'success_redirect_url' => 'https://google.com',
+            'failure_redirect_url' => 'https://google.com',
 
             'metadata' => [
                 'user_id' => $user->id,
