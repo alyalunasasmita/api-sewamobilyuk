@@ -36,12 +36,6 @@ class PaymentsController extends Controller
 
         $apiInstance = new InvoiceApi();
 
-        dd([
-            'external_id' => $externalId,
-            'amount' => $amount,
-            'email' => $user->email,
-        ]);
-
         $params = new CreateInvoiceRequest([
             'external_id' => $externalId,
             'amount' => $amount,
