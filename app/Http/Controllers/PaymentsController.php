@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Payments;
+use App\Models\Payment;
 use App\Models\Reservation;
 use Illuminate\Http\Request;
 
