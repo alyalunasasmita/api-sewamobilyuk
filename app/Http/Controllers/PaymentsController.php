@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Payments;
 use Illuminate\Http\Request;
-use Xendit\Xendit;
+use Xendit\Configuration;
+use Xendit\Invoice\InvoiceApi; 
+use Xendit\Invoice\CreateInvoiceRequest;
 
 class PaymentsController extends Controller
 {
@@ -29,7 +31,7 @@ class PaymentsController extends Controller
      */
     public function store(Request $request)
     {
-        Xendit::setApiKey(env('XENDIT_SECRET_KEY')); 
+        Xendit::setXenditKey(env('XENDIT_SECRET_KEY')); 
         $user = $request->attributes->get('user'); 
         $reservation = Reservation::where('user_id', $user->id)->latest()->first();
         if(!$reservation){
@@ -39,11 +41,13 @@ class PaymentsController extends Controller
             ], 404);
         }
 
-        $amount = (int) ($reservation->total * 0.10);
+        $amount = (int) ($reservation->total * 0.11);
         $externalId = 'reservation-' . $reservation->id;
         $noPayment = 'INV-'. time() . $reservation->id;
 
-        $params = [
+        $apiInstance = new InvoiceApi(); 
+
+        $params = new CreateInvoiceRequest([
             'external_id'=> $externalId, 
             'amount' =>$amount,
             'description' => 'Pembayaran reservasi Mobil berhasil', 
@@ -54,9 +58,10 @@ class PaymentsController extends Controller
                 'reservation_id' => $reservation->id, 
                 'no_payment' => $noPayment
             ]
-        ];
+        ]);
 
-        $invoice = \Xendit\Invoice::create($params); 
+        $createInv = $apiInstance->createInvoice($params);
+
         Payments::create([
             'external_id'=>$externalId, 
             'amount' =>$amount,
