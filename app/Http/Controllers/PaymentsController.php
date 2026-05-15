@@ -3,130 +3,100 @@
 namespace App\Http\Controllers;
 
 use App\Models\Payments;
+use App\Models\Reservation;
 use Illuminate\Http\Request;
+
 use Xendit\Configuration;
-use Xendit\Invoice\InvoiceApi; 
+use Xendit\Invoice\InvoiceApi;
 use Xendit\Invoice\CreateInvoiceRequest;
 
 class PaymentsController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        Xendit::setXenditKey(env('XENDIT_SECRET_KEY')); 
-        $user = $request->attributes->get('user'); 
-        $reservation = Reservation::where('user_id', $user->id)->latest()->first();
-        if(!$reservation){
-            return response([
-                'status' => 'error', 
-                'message' => 'reservasi tidak ditemukan',
+        Configuration::setXenditKey(env('XENDIT_SECRET_KEY'));
+
+        $user = $request->attributes->get('user');
+
+        $reservation = Reservation::where('user_id', $user->id)
+            ->latest()
+            ->first();
+
+        if (!$reservation) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'reservasi tidak ditemukan'
             ], 404);
         }
 
         $amount = (int) ($reservation->total * 0.11);
-        $externalId = 'reservation-' . $reservation->id;
-        $noPayment = 'INV-'. time() . $reservation->id;
 
-        $apiInstance = new InvoiceApi(); 
+        $externalId = 'reservation-' . $reservation->id;
+        $noPayment = 'INV-' . time() . $reservation->id;
+
+        $apiInstance = new InvoiceApi();
 
         $params = new CreateInvoiceRequest([
-            'external_id'=> $externalId, 
-            'amount' =>$amount,
-            'description' => 'Pembayaran reservasi Mobil berhasil', 
+            'external_id' => $externalId,
+            'amount' => $amount,
+            'description' => 'Pembayaran reservasi mobil berhasil',
             'payer_email' => $user->email,
 
             'metadata' => [
-                'user_id' => $user->id, 
-                'reservation_id' => $reservation->id, 
+                'user_id' => $user->id,
+                'reservation_id' => $reservation->id,
                 'no_payment' => $noPayment
             ]
         ]);
 
-        $createInv = $apiInstance->createInvoice($params);
+        $invoice = $apiInstance->createInvoice($params);
 
         Payments::create([
-            'external_id'=>$externalId, 
-            'amount' =>$amount,
-            'user_id' => $user->id, 
-            'reservation_id' => $reservation->id, 
+            'external_id' => $externalId,
+            'amount' => $amount,
+            'user_id' => $user->id,
+            'reservation_id' => $reservation->id,
             'no_payment' => $noPayment
         ]);
 
         return response()->json([
-            'checkout_URL' => $invoice['invoice_url']
+            'checkout_url' => $invoice['invoice_url']
         ]);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function webhook(Request $request)
     {
-        $data = $request->all(); 
+        $data = $request->all();
 
-        if($data['status'] === 'PAID'){
-            $payment = Payments::where ('external_id', $data['external_id'])->first();
-            if(!$payment){
+        if ($data['status'] === 'PAID') {
+
+            $payment = Payments::where(
+                'external_id',
+                $data['external_id']
+            )->first();
+
+            if (!$payment) {
                 return response()->json([
-                    'status' => 'error', 
+                    'status' => 'error',
                     'message' => 'data pembayaran tidak ditemukan'
                 ]);
             }
-            $payment->update ([
+
+            $payment->update([
                 'status' => 'paid'
             ]);
+
             $payment->reservation->update([
-                'reservations_status' => 'paid'
-            ]);
-            $payment->reservations->data_cars->update([
-                'availability_status' => 'booked'
+                'reservation_status' => 'paid'
             ]);
 
+            $payment->reservation->dataCar->update([
+                'availability_status' => 'booked'
+            ]);
         }
+
         return response()->json([
             'status' => 'success'
         ]);
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Payments $payments)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Payments $payments)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Payments $payments)
-    {
-        //
     }
 }
