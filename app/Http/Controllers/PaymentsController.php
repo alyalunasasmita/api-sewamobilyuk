@@ -29,9 +29,9 @@ class PaymentsController extends Controller
             ], 404);
         }
 
-        $amount = (int) ($reservation->total * 0.11);
+        $amount = ceil($reservation->total * 0.11);
 
-        $externalId = 'reservation-' . $reservation->id;
+        $externalId = 'reservation-' . time() . '-' . $reservation->id;
         $noPayment = 'INV-' . time() . '-' . $reservation->id;
 
         $apiInstance = new InvoiceApi();
