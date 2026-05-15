@@ -29,7 +29,7 @@ class PaymentsController extends Controller
             ], 404);
         }
 
-        $amount = ceil($reservation->total * 0.11);
+        $amount = ceil($reservation->total_price * 0.11);
 
         $externalId = 'reservation-' . time() . '-' . $reservation->id;
         $noPayment = 'INV-' . time() . '-' . $reservation->id;
