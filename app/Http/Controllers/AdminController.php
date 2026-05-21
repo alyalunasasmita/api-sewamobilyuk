@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Payment;
 use App\Models\Reservation;
+use App\Models\User;
 
 class AdminController extends Controller
 {
@@ -59,7 +60,7 @@ class AdminController extends Controller
     }
 
     public function customerProfile(){
-        $user = User::where('role','user')->get(); 
+        $user = User::where('role','customer')->get(); 
         return response()->json([
             'status' => 'success', 
             'data' => $user
