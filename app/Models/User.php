@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+use App\Models\User;
 
 class User extends Authenticatable
 {
@@ -70,8 +71,14 @@ class User extends Authenticatable
     {
         return $this->avatar ? asset('storage/'.$this->avatar) : null;
     }
+
     public function getDriveLicenceUrlAttribute()
     {
         return $this->drive_licence ? asset('storage/'.$this->drive_licence) : null;
+    }
+    
+    public function otps()
+    {
+        return $this->hasMany(Otp::class);
     }
 }

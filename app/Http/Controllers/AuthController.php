@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\SendEmail;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Otps;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Firebase\JWT\JWT;
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\Auth;
 class AuthController extends Controller
 {
     
-    public function register(Request $request){
+    public function register(Request $request){ 
         $request->validate([
             'name'=> 'required|max:255', 
             'username'=> 'required|unique:users,username', 
@@ -85,7 +86,6 @@ class AuthController extends Controller
         $request->validate([
             'email' => 'required|email'
         ]);
-
         $user = User::where('email', $request->email)->first(); 
         if(!$user) {
             return response()->json([
@@ -94,16 +94,42 @@ class AuthController extends Controller
             ]);
         }
         $otp = rand(100000, 999999);  
-
-        $data = [
-            'otp' => $otp
-        ];
-
+        otps::create([
+            'user_id' => $user->id, 
+            'OTP_code' => $otp, 
+            'type' => 'forget_password',
+            'exp' => now()->addMinutes(5)
+        ]);
         Mail::to($request->email)->send(new SendEmail($data, 'Kode OTP'));
         return response()->json([
             'status' => 'success', 
-            'message' => 'kode OTP sudah ke email, kalo gada di inbox cek di spam'
+            'message' => 'kode OTP sudah ke email, expired 5 menit dari dikirim'
         ]);
+    }
+
+    public function verify_otp_forget_password(Request $request){
+        $request->validate([
+            'otp' => 'required'
+        ]); 
+        $otp = Otps::where('OTP_code', $request->otp)->where('type','forget_password')->whereNull('used_at')->latest()->first();
+        if(!$user) {
+            return response()->json([
+                'status'=> 'error', 
+                'message' => 'otp tidak ditemukan, harap memasukan kode otp yang valid'
+            ]); 
+        }
+        if($otp->exp < now()) {
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'token telah kadaluarsa, silahkan meminta kode otp yang baru'
+            ]);
+        }
+        $otp->used_at = now();
+        $otp->save();
+        return response()->json([
+            'status' => 'succes', 
+            'message' => 'verifikasi OTP berhasil'
+        ]);        
     }
 
     
