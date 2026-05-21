@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\SendEmail;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Firebase\JWT\JWT;
 use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
+    
     public function register(Request $request){
         $request->validate([
             'name'=> 'required|max:255', 
@@ -75,6 +78,31 @@ class AuthController extends Controller
         return response()->json([
             "status" => "success", 
             "message" => "berhasil logout"
+        ]);
+    }
+
+    public function forgetPassword(Request $request) {
+        $request->validate([
+            'email' => 'required|email'
+        ]);
+
+        $user = User::where('email', $request->email)->first(); 
+        if(!$user) {
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'email dengan '. $request->email . ' tidak ditemukan'
+            ]);
+        }
+        $otp = rand(100000, 999999);  
+
+        $data = [
+            'otp' => $otp
+        ];
+
+        Mail::to($request->email)->send(new SendEmail($data, 'Kode OTP'));
+        return response()->json([
+            'status' => 'success', 
+            'message' => 'kode OTP sudah ke email, kalo gada di inbox cek di spam'
         ]);
     }
 

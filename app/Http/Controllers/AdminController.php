@@ -57,5 +57,13 @@ class AdminController extends Controller
     public function detailReserv ($id){
         
     }
+
+    public function customerProfile(){
+        $user = User::where('role','user')->get(); 
+        return response()->json([
+            'status' => 'success', 
+            'data' => $user
+        ]);
+    }
     
 }

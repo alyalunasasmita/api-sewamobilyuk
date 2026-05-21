@@ -18,10 +18,11 @@ Route::get('/user', function (Request $request) {
 //auth
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']); 
+Route::post('/forget-password', [AuthController::class, 'forgetPassword']);
 
 //show car 
 Route::get('/show/{id}', [DataCarController::class, 'show']);
-Route::get('/show', [DataCarController::class, 'index']);
+Route::middleware('throttle:60,1')->get('/show', [DataCarController::class, 'index']);
 
 
 //admin
@@ -38,6 +39,9 @@ Route::middleware(['role:admin'])->group(function(){
     Route::patch('/rejected-reservation/{id}',[AdminController::class, '']); 
     Route::get('/reservations', [AdminController::class, 'listReservasi']);
     Route::get('/reservation/{id}', [AdminController::class, '']); 
+
+    //manajemen pelanggan 
+    Route::get('/customer-profile', [AdminController::class, 'customerProfile']);
 
 });
 
@@ -56,6 +60,6 @@ Route::middleware(['role:customer'])->group(function(){
 
     //pembayaran 
     Route::post('/payment', [PaymentsController::class, 'store']); 
-    Route::get('/xendit/webhook', [PaymentsController::class, 'webhook']);
+    Route::get('/midtrans/webhook', [PaymentsController::class, 'webhook']);
 
 });
