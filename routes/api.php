@@ -20,6 +20,10 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']); 
 Route::post('/forget-password', [AuthController::class, 'forgetPassword']);
 
+//utility 
+Route::post('/verify-otp-forget-password', [AuthController::class, 'verify_otp_forget_password']);
+
+
 //show car 
 Route::get('/show/{id}', [DataCarController::class, 'show']);
 Route::middleware('throttle:60,1')->get('/show', [DataCarController::class, 'index']);
