@@ -2,12 +2,14 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DataCarController;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Controllers\ReservationsController;
 use App\Http\Controllers\PaymentsController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\TrackerController;
 
 use App\Http\Controllers\ProfileUser;
 
@@ -67,3 +69,11 @@ Route::middleware(['role:customer'])->group(function(){
     Route::get('/midtrans/webhook', [PaymentsController::class, 'webhook']);
 
 });
+
+//trakcer 
+Route::post('/tracker/ping', [TrackerController::class, 'ping']);
+Route::post('/tracker/stop', [TrackerController::class, 'stop']);
+Route::get('/tracker/locations', [TrackerController::class, 'locations']);
+Route::get('/tracker/locations/{carId}', [TrackerController::class, 'locationByCar']);
+Route::post('/tracker/generate-token', [TrackerController::class, 'generateToken']);
+Route::delete('/tracker/{id}', [TrackerController::class, 'destroy']);
