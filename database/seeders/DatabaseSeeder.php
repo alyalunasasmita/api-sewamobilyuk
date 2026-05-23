@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test admin',
             'email' => 'admin@example.com',
             'password' => Hash::make('admin123'),
-            'username' => 'user', 
+            'username' => 'admin', 
             'role' => 'admin'
         ]);
 
@@ -34,6 +34,6 @@ class DatabaseSeeder extends Seeder
             'username' => 'customer', 
         ]);
 
-        DataCar::factory(20)->create();
+        // DataCar::factory(20)->create();
     }
 }
