@@ -31,6 +31,6 @@ public function car()
 
 public function payment()
 {
-    return $this->hasOne(Payments::class);
+    return $this->hasOne(Payment::class);
 }
 }

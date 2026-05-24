@@ -26,18 +26,18 @@ class AdminController extends Controller
         ]);
     }
 
-    public function ApproveReserv($id){
-        $payment = Payment::find($id); 
-        if(!$payment){
-            return response()->json([
-                'status' => 'error', 
-                'message' => 'Customer belum melakukan pembayaran'
-            ]);
-        }
-        $payment->reservation->car->update([
-            'availability_status' => 'on rent'
-        ]);
-    }
+    // public function ApproveReserv($id){
+    //     $payment = Payment::find($id); 
+    //     if(!$payment){
+    //         return response()->json([
+    //             'status' => 'error', 
+    //             'message' => 'Customer belum melakukan pembayaran'
+    //         ]);
+    //     }
+    //     $payment->reservation->car->update([
+    //         'availability_status' => 'on rent'
+    //     ]);
+    // }
 
     public function listReservasi()
     {
@@ -56,7 +56,17 @@ class AdminController extends Controller
     }
 
     public function detailReserv ($id){
-        
+        $reservation = Reservation::with('user')->find($id); 
+        if(!$reservation){
+            return response()->json([
+                'status' => 'error', 
+                'message' => "data reservasi tidak ditemukan"
+            ]);
+        }
+        return response()->json([
+            'status' => 'success', 
+            'data' => $reservation
+        ]);
     }
 
     public function customerProfile(){

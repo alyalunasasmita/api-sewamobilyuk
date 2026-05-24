@@ -6,8 +6,11 @@ use App\Mail\SendEmail;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Otps;
+use Carbon\Carbon;
+
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
 use Firebase\JWT\JWT;
 use Illuminate\Support\Facades\Auth;
 
@@ -28,7 +31,18 @@ class AuthController extends Controller
             'email' => $request->email, 
             'password' => Hash::make($request->password)
         ]); 
-
+        $otp = rand(100000, 999999); 
+        Otps::create([
+            'user_id' => $user->id, 
+            'OTP_code' => $otp, 
+            'type' => 'verify_account', 
+            'exp' => now()->addMinutes(5)
+        ]);
+        $data = [
+            'name' => $user->name, 
+            'otp' => $otp
+        ];
+        Mail::to($user->email)->send(new SendEmail($data, 'verifikasi Email')); 
         return response()->json([
             'status' => 'success',
             'message' => 'register berhasil', 
@@ -90,16 +104,20 @@ class AuthController extends Controller
         if(!$user) {
             return response()->json([
                 'status' => 'error', 
-                'message' => 'email dengan '. $request->email . ' tidak ditemukan'
-            ]);
+                'message' => 'email tidak ditemukan'
+            ], 404);
         }
+        Otps::where('user_id', $user->id)->where('type', 'forget_password')->whereNull('used_at')->delete();
         $otp = rand(100000, 999999);  
-        otps::create([
+        Otps::create([
             'user_id' => $user->id, 
             'OTP_code' => $otp, 
             'type' => 'forget_password',
             'exp' => now()->addMinutes(5)
         ]);
+        $data = [
+            'otp' => $otp
+        ];
         Mail::to($request->email)->send(new SendEmail($data, 'Kode OTP'));
         return response()->json([
             'status' => 'success', 
@@ -107,30 +125,43 @@ class AuthController extends Controller
         ]);
     }
 
-    public function verify_otp_forget_password(Request $request){
+    public function resetPassword(Request $request){
         $request->validate([
-            'otp' => 'required'
+            'email' => 'required|email', 
+            'otp' => 'required', 
+            'password' => 'required|min:6'
         ]); 
-        $otp = Otps::where('OTP_code', $request->otp)->where('type','forget_password')->whereNull('used_at')->latest()->first();
-        if(!$user) {
-            return response()->json([
-                'status'=> 'error', 
-                'message' => 'otp tidak ditemukan, harap memasukan kode otp yang valid'
-            ]); 
-        }
-        if($otp->exp < now()) {
+        $resetData = DB::table('password_reset_tokens')->where('email', $request->email)->first(); 
+        if(!$resetData){
             return response()->json([
                 'status' => 'error', 
-                'message' => 'token telah kadaluarsa, silahkan meminta kode otp yang baru'
+                'message' => 'reset token tidak ditemukan'
+            ], 400);
+        }
+
+        if(Hash::check($request->reset_token, $resetData->token)){
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'token tidak valid'
             ]);
         }
-        $otp->used_at = now();
-        $otp->save();
-        return response()->json([
-            'status' => 'succes', 
-            'message' => 'verifikasi OTP berhasil'
-        ]);        
-    }
 
-    
+        if(Carbon::parse($resetData->created_at)->addMinute(15)->isPast()){
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'token telah kadaluarsa'
+            ], 400);
+        }
+
+        $user = User::where('email', $request->email)->first(); 
+        $user->password = bcrypt($request->password); 
+        $user->save(); 
+        
+        //delete token reset
+        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+        return response()->json([
+            'status' => 'success', 
+            'message' => 'password berhasil diubah'
+        ]);
+    }
 }

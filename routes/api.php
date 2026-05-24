@@ -10,6 +10,7 @@ use App\Http\Controllers\ReservationsController;
 use App\Http\Controllers\PaymentsController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TrackerController;
+use App\Http\Controllers\OtpController;
 
 use App\Http\Controllers\ProfileUser;
 
@@ -21,9 +22,12 @@ Route::get('/user', function (Request $request) {
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']); 
 Route::post('/forget-password', [AuthController::class, 'forgetPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+
 
 //utility 
-Route::post('/verify-otp-forget-password', [AuthController::class, 'verify_otp_forget_password']);
+Route::post('/verify-otp-forget-password', [OtpController::class, 'verify_otp_forget_password']);
+Route::post('/verify-otp-account', [OtpController::class, 'verify_otp_account']);
 
 
 //show car 
@@ -37,14 +41,14 @@ Route::middleware(['role:admin'])->group(function(){
     //menagemen data mobil
     Route::post('/add-car', [DataCarController::class, 'store']);
     Route::delete('/deleteCar/{id}', [DataCarController::class, 'destroy']);
-    Route::post('/updateCar/{data_car}', [DataCarController::class, 'update']);
+    Route::post('/updateCar/{id}', [DataCarController::class, 'update']);
 
     //manajemen reservasi 
     Route::patch('/approve-reservasi/{id}', [AdminController::class, 'ApproveReserv']);
     Route::patch('/approve-refund/{id}', [AdminController::class, 'ApproveRefund']);
     Route::patch('/rejected-reservation/{id}',[AdminController::class, '']); 
     Route::get('/reservations', [AdminController::class, 'listReservasi']);
-    Route::get('/reservation/{id}', [AdminController::class, '']); 
+    Route::get('/reservation/{id}', [AdminController::class, 'detailReserv']); 
 
     //manajemen pelanggan 
     Route::get('/customer-profile', [AdminController::class, 'customerProfile']);

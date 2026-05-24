@@ -11,7 +11,8 @@ class Otps extends Model
         'user_id',
         'OTP_code',
         'used_at',
-        'exp'
+        'exp',
+        'type'
     ];
 
     public function user()

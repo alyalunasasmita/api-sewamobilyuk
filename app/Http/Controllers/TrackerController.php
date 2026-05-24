@@ -46,7 +46,7 @@ class TrackerController extends Controller
         $tracker->save();
 
         return response()->json([
-            'status'  => 'ok',
+            'status'  => 'success',
             'message' => 'Location updated',
             'tracker' => $tracker->only(['id', 'car_id', 'car_label', 'last_seen_at']),
         ]);
@@ -70,7 +70,7 @@ class TrackerController extends Controller
             $tracker->save();
         }
 
-        return response()->json(['status' => 'ok']);
+        return response()->json(['status' => 'success']);
     }
 
     /**
@@ -91,7 +91,7 @@ class TrackerController extends Controller
         });
 
         return response()->json([
-            'status' => 'ok',
+            'status' => 'success',
             'data'   => $trackers,
         ]);
     }
@@ -112,7 +112,7 @@ class TrackerController extends Controller
         }
 
         return response()->json([
-            'status' => 'ok',
+            'status' => 'success',
             'data'   => $tracker,
         ]);
     }
@@ -147,7 +147,7 @@ class TrackerController extends Controller
         $baseUrl = rtrim(config('app.url'), '/');
 
         return response()->json([
-            'status'       => 'ok',
+            'status'       => 'success',
             'device_token' => $token,
             'tracker_url'  => $baseUrl . '/tracker.html?token=' . $token . '&car_id=' . $request->car_id . '&label=' . urlencode($request->car_label ?? '') . '&autostart=1',
             'tracker'      => $tracker,
@@ -163,6 +163,8 @@ class TrackerController extends Controller
         $tracker = VehicleTracker::findOrFail($id);
         $tracker->update(['is_active' => false]);
 
-        return response()->json(['status' => 'ok', 'message' => 'Tracker deactivated']);
+        return response()->json([
+            'status' => 'success', 
+            'message' => 'Tracker deactivated']);
     }
 }
