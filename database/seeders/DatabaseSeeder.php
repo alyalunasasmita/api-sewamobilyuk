@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\DataCar;
+use App\Models\Reservation;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -17,23 +18,25 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'Test admin',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('admin123'),
-            'username' => 'admin', 
-            'role' => 'admin'
-        ]);
+        // User::factory()->create([
+        //     'name' => 'Test admin',
+        //     'email' => 'admin@example.com',
+        //     'password' => Hash::make('admin123'),
+        //     'username' => 'admin', 
+        //     'role' => 'admin'
+        // ]);
 
-        User::factory()->create([
-            'name' => 'Test customer',
-            'email' => 'customer@example.com',
-            'password' => Hash::make('customer123'),
-            'username' => 'customer', 
-        ]);
+        // User::factory()->create([
+        //     'name' => 'Test customer',
+        //     'email' => 'customer@example.com',
+        //     'password' => Hash::make('customer123'),
+        //     'username' => 'customer', 
+        // ]);
 
-        DataCar::factory(20)->create();
+        // DataCar::factory(20)->create();
+
+        Reservation::factory(10)->create();
     }
 }
