@@ -56,7 +56,7 @@ class AdminController extends Controller
     }
 
     public function detailReserv ($id){
-        $reservation = Reservation::with('user')->find($id); 
+        $reservation = Reservation::with(['user', 'car', 'payment'])->find($id); 
         if(!$reservation){
             return response()->json([
                 'status' => 'error', 

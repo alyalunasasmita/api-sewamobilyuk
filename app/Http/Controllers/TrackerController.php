@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\VehicleTracker;
+use App\Models\VehicleTrackerHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
@@ -45,8 +46,18 @@ class TrackerController extends Controller
         $tracker->last_seen_at = now();
         $tracker->save();
 
+        if ($request->lat && $request->lng) {
+            VehicleTrackerHistory::create([
+                'car_id'       => $tracker->car_id,
+                'device_token' => $tracker->device_token,
+                'lat'          => $request->lat,
+                'lng'          => $request->lng,
+                'speed'        => $request->speed ?? 0,
+            ]);
+        }
+
         return response()->json([
-            'status'  => 'success',
+            'status'  => 'ok',
             'message' => 'Location updated',
             'tracker' => $tracker->only(['id', 'car_id', 'car_label', 'last_seen_at']),
         ]);
@@ -163,8 +174,23 @@ class TrackerController extends Controller
         $tracker = VehicleTracker::findOrFail($id);
         $tracker->update(['is_active' => false]);
 
+        return response()->json(['status' => 'success', 'message' => 'Tracker deactivated']);
+    }
+
+    /**
+     * GET /tracker/history/{car_id}
+     * Ambil histori perjalanan (rute) mobil dalam 24 jam terakhir.
+     */
+    public function history($carId)
+    {
+        $history = VehicleTrackerHistory::where('car_id', $carId)
+            ->where('created_at', '>=', now()->subHours(24))
+            ->orderBy('created_at', 'asc')
+            ->get();
+
         return response()->json([
-            'status' => 'success', 
-            'message' => 'Tracker deactivated']);
+            'status' => 'success',
+            'data'   => $history,
+        ]);
     }
 }

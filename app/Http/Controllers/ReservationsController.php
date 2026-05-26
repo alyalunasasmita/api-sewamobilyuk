@@ -53,7 +53,36 @@ class ReservationsController extends Controller
         ]); 
 
         $user = $request->attributes->get('user');
-        $car = DataCar::findOrFail($request->data_car_id);
+        $car = DataCar::where('id' , $request->data_car_id)->where('availability_status', 'available')->first();
+        if(!$car){
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'pilih mobil yang masih tersedia'
+            ]);
+        }
+        $isBooked = Reservation::where('data_car_id', $request->data_car_id)
+        ->where(function($query) use ($request){
+        $query->whereBetween('start_date', [
+            $request->start_date,
+            $request->end_date
+        ])
+        ->orWhereBetween('end_date', [
+            $request->start_date,
+            $request->end_date
+        ])
+        ->orWhere(function($q) use ($request){
+            $q->where('start_date', '<=', $request->start_date)
+              ->where('end_date', '>=', $request->end_date);
+        });
+    })
+
+    ->exists();
+        if($isBooked){
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'mobil sudah dibooking pada rentang tanggal tersebut'
+            ], 409);
+        }                
 
         $start = Carbon::parse($request->start_date); 
         $end = Carbon::parse($request->end_date);

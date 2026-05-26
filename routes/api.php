@@ -45,7 +45,7 @@ Route::middleware(['role:admin'])->group(function(){
 
     //manajemen reservasi 
     Route::patch('/approve-reservasi/{id}', [AdminController::class, 'ApproveReserv']);
-    Route::patch('/approve-refund/{id}', [AdminController::class, 'ApproveRefund']);
+    Route::patch('/approve-refund/{id}', [AdminController::class, 'refund']);
     Route::patch('/rejected-reservation/{id}',[AdminController::class, '']); 
     Route::get('/reservations', [AdminController::class, 'listReservasi']);
     Route::get('/reservation/{id}', [AdminController::class, 'detailReserv']); 
@@ -70,7 +70,7 @@ Route::middleware(['role:customer'])->group(function(){
 
     //pembayaran 
     Route::post('/payment', [PaymentsController::class, 'store']); 
-    Route::get('/midtrans/webhook', [PaymentsController::class, 'webhook']);
+    Route::get('/midtrans/callback', [PaymentsController::class, 'callback']);
 
 });
 
@@ -81,3 +81,4 @@ Route::get('/tracker/locations', [TrackerController::class, 'locations']);
 Route::get('/tracker/locations/{carId}', [TrackerController::class, 'locationByCar']);
 Route::post('/tracker/generate-token', [TrackerController::class, 'generateToken']);
 Route::delete('/tracker/{id}', [TrackerController::class, 'destroy']);
+Route::get('/tracker/history/{carId}', [TrackerController::class, 'history']);

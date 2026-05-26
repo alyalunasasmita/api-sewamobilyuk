@@ -9,12 +9,16 @@ class Payment extends Model
     protected $fillable = [
         'user_id', 
         'reservation_id',
-        'no_payment',
+        'order_id',
         'external_id',
+        'snap_token',
         'invoice_id',
         'amount', //total pembayaran keseluruhan (+ pajak)
         'status', 
-        'payment_method'
+        'payment_type',
+        'payment_method',
+        'expired_at', 
+        'paid_at'
     ];
 
     function reservation(){

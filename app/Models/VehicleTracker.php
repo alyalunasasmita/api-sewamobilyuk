@@ -43,4 +43,14 @@ class VehicleTracker extends Model
     }
 
     protected $appends = ['is_online'];
+
+    public function car()
+    {
+        return $this->belongsTo(DataCar::class);
+    }
+
+    public function histories()
+    {
+        return $this->hasMany(VehicleTrackerHistory::class);
+    }
 }

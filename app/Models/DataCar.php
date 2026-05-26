@@ -26,4 +26,9 @@ class DataCar extends Model
     {
         return asset('storage/' . $this->image);
     }
+
+    public function tracker()
+    {
+        return $this->hasOne(VehicleTracker::class);
+    }
 }

@@ -15,12 +15,17 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('reservation_id')->constrained()->onDelete('cascade');
-            $table->string('no_payment')->unique();
-            $table->string('external_id')->unique()->nullable();
-            $table->string('invoice_id')->nullable(); 
-            $table->decimal('amount',12,2); 
-            $table->enum('status',['pending', 'success','expired','failed','refunded'])->default('pending');
+            $table->string('order_id')->unique();
+            $table->string('external_id')->nullable()->unique();
+            $table->text('snap_token')->nullable();
+            $table->string('invoice_id')->nullable();
+            $table->decimal('amount', 12, 2);
+            $table->enum('status', ['pending', 'paid', 'expired', 'failed', 'refunded'])->default('pending');
+            $table->string('transaction_status')->nullable();
+            $table->string('payment_type')->nullable();
             $table->string('payment_method')->nullable();
+            $table->timestamp('expired_at')->nullable();
+            $table->timestamp('paid_at')->nullable();
             $table->timestamps();
         });
     }
