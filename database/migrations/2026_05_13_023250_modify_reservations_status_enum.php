@@ -18,9 +18,11 @@ return new class extends Migration
         'completed', 
         'cancelled',
         'rejected', 
-        'confirmed'
+        'confirmed',
+        'waiting_payment',
+        'waiting_confirmation'
         )
-        NOT NULL DEFAULT 'pending'
+        NOT NULL DEFAULT 'waiting_payment'
         ");
     }
 

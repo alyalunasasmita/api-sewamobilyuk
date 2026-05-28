@@ -18,7 +18,8 @@ class Reservation extends Model
         'reservations_status', 
         'refund_status',
         'cancelled_at', 
-        'no_reservasi'
+        'no_reservasi',
+        'reason_rejected'
     ];
 
     public function user()

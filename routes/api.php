@@ -45,8 +45,8 @@ Route::middleware(['role:admin'])->group(function(){
 
     //manajemen reservasi 
     Route::patch('/approve-reservasi/{id}', [AdminController::class, 'ApproveReserv']);
-    Route::patch('/approve-refund/{id}', [AdminController::class, 'refund']);
-    Route::patch('/rejected-reservation/{id}',[AdminController::class, '']); 
+    Route::patch('/approve-refund/{id}', [AdminController::class, 'ApproveRefund']);
+    Route::patch('/rejected-reservation/{id}',[AdminController::class, 'RejectReserv']); 
     Route::get('/reservations', [AdminController::class, 'listReservasi']);
     Route::get('/reservation/{id}', [AdminController::class, 'detailReserv']); 
 
@@ -69,7 +69,7 @@ Route::middleware(['role:customer'])->group(function(){
     Route::patch('/cancel-reserv/{id}', [ReservationsController::class, 'cancel']);
 
     //pembayaran 
-    Route::post('/payment', [PaymentsController::class, 'store']); 
+    // Route::post('/payment', [PaymentsController::class, 'store']); 
     Route::get('/midtrans/callback', [PaymentsController::class, 'callback']);
 
 });
