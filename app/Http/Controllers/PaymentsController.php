@@ -20,65 +20,65 @@ class PaymentsController extends Controller
     public function callback(Request $request)
     {
         \Log::info('MIDTRANS TEST', $request->all());
-        $serverKey = config('midtrans.server_key');
+        // $serverKey = config('midtrans.server_key');
 
-        $signatureKey = hash(
-            'sha512',
-            $request->order_id .
-            $request->status_code .
-            $request->gross_amount .
-            $serverKey
-        );
+        // $signatureKey = hash(
+        //     'sha512',
+        //     $request->order_id .
+        //     $request->status_code .
+        //     $request->gross_amount .
+        //     $serverKey
+        // );
 
-        if ($signatureKey != $request->signature_key) {
-            return response()->json([
-                'message' => 'invalid signature'
-            ], 403);
-        }
+        // if ($signatureKey != $request->signature_key) {
+        //     return response()->json([
+        //         'message' => 'invalid signature'
+        //     ], 403);
+        // }
 
-        $payment = Payment::where('order_id', $request->order_id)->first();
+        // $payment = Payment::where('order_id', $request->order_id)->first();
 
-        if (!$payment) {
-            return response()->json([
-                'message' => 'payment tidak ditemukan'
-            ], 404);
-        }
+        // if (!$payment) {
+        //     return response()->json([
+        //         'message' => 'payment tidak ditemukan'
+        //     ], 404);
+        // }
 
-        $transactionStatus = $request->transaction_status;
+        // $transactionStatus = $request->transaction_status;
 
-        if ($transactionStatus == 'settlement') {
+        // if ($transactionStatus == 'settlement') {
 
-            $payment->update([
-                'status' => 'paid',
-                'paid_at' => now(),
-                'transaction_status' => $transactionStatus,
-                'payment_type' => $request->payment_type
-            ]);
+        //     $payment->update([
+        //         'status' => 'paid',
+        //         'paid_at' => now(),
+        //         'transaction_status' => $transactionStatus,
+        //         'payment_type' => $request->payment_type
+        //     ]);
 
-            $payment->reservation->update([
-                'reservations_status' => 'pending'
-            ]);
+        //     $payment->reservation->update([
+        //         'reservations_status' => 'pending'
+        //     ]);
 
-        } elseif ($transactionStatus == 'expire') {
+        // } elseif ($transactionStatus == 'expire') {
 
-            $payment->update([
-                'status' => 'expired'
-            ]);
+        //     $payment->update([
+        //         'status' => 'expired'
+        //     ]);
 
-            $payment->reservation->update([
-                'reservations_status' => 'cancelled'
-            ]);
+        //     $payment->reservation->update([
+        //         'reservations_status' => 'cancelled'
+        //     ]);
 
-        } elseif ($transactionStatus == 'cancel') {
+        // } elseif ($transactionStatus == 'cancel') {
 
-            $payment->update([
-                'status' => 'failed'
-            ]);
+        //     $payment->update([
+        //         'status' => 'failed'
+        //     ]);
 
-            $payment->reservation->update([
-                'reservations_status' => 'cancelled'
-            ]);
-        }
+        //     $payment->reservation->update([
+        //         'reservations_status' => 'cancelled'
+        //     ]);
+        // }
 
         return response()->json([
             'status' => 'success',
