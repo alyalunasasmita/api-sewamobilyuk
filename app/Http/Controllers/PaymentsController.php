@@ -61,7 +61,11 @@ class PaymentsController extends Controller
             ]);
 
             $payment->reservation->update([
-                'reservations_status' => 'pending'
+                'reservations_status' => 'waiting_confirmation'
+            ]);
+
+            $payment->reservation->car->update([
+                'availability_status' => 'booked'
             ]);
 
         } elseif ($transactionStatus == 'expire') {
