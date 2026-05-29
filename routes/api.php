@@ -70,7 +70,6 @@ Route::middleware(['role:customer'])->group(function(){
 
     //pembayaran 
     // Route::post('/payment', [PaymentsController::class, 'store']); 
-    Route::get('/midtrans/callback', [PaymentsController::class, 'callback']);
 
 });
 
@@ -82,3 +81,5 @@ Route::get('/tracker/locations/{carId}', [TrackerController::class, 'locationByC
 Route::post('/tracker/generate-token', [TrackerController::class, 'generateToken']);
 Route::delete('/tracker/{id}', [TrackerController::class, 'destroy']);
 Route::get('/tracker/history/{carId}', [TrackerController::class, 'history']);
+
+Route::post('/midtrans/callback', [PaymentsController::class, 'callback']);
