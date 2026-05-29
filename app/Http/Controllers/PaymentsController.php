@@ -19,6 +19,7 @@ class PaymentsController extends Controller
 
     public function callback(Request $request)
     {
+        \Log::info('MIDTRANS TEST', $request->all());
         $serverKey = config('midtrans.server_key');
 
         $signatureKey = hash(
