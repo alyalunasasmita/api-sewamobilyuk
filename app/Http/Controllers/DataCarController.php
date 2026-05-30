@@ -121,7 +121,7 @@ class DataCarController extends Controller
             }
 
             $data_car->update([
-                'name_car' => 'TEST UPDATE',
+                'name_car' => $request->name_car,
                 'passenger_capacity' => $request->passenger_capacity,
                 'model' => $request->model,
                 'price' => $request->price,
