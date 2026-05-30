@@ -55,7 +55,7 @@ class DataCarController extends Controller
                 'year_of_car' => $request->year_of_car,
                 'description' => $request->description,
                 'plate_number' => $request->plate_number,
-                'category' => $request->kategori,
+                'kategori' => $request->kategori,
                 'transmisi' => $request->transmisi
             ]);
 
@@ -93,7 +93,8 @@ class DataCarController extends Controller
 
     public function update(Request $request, DataCar $data_car)
     {
-        $request->validate([
+ 
+        $result = $request->validate([
             'image' => 'nullable|image|mimes:jpg,jpeg,png|max:5048',
             'name_car' => 'required|string',
             'passenger_capacity' => 'required|integer',
@@ -120,14 +121,14 @@ class DataCarController extends Controller
             }
 
             $data_car->update([
-                'name_car' => $request->name_car,
+                'name_car' => 'TEST UPDATE',
                 'passenger_capacity' => $request->passenger_capacity,
                 'model' => $request->model,
                 'price' => $request->price,
                 'year_of_car' => $request->year_of_car,
                 'description' => $request->description,
                 'plate_number' => $request->plate_number,
-                'category' => $request->kategori,
+                'kategori' => $request->kategori,
                 'transmisi' => $request->transmisi,
                 'image' => $data_car->image
             ]);

@@ -41,7 +41,7 @@ Route::middleware(['role:admin'])->group(function(){
     //menagemen data mobil
     Route::post('/add-car', [DataCarController::class, 'store']);
     Route::delete('/deleteCar/{id}', [DataCarController::class, 'destroy']);
-    Route::post('/updateCar/{id}', [DataCarController::class, 'update']);
+    Route::put('/updateCar/{data_car}', [DataCarController::class, 'update']);
 
     //manajemen reservasi 
     Route::patch('/approve-reservasi/{id}', [AdminController::class, 'ApproveReserv']);

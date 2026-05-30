@@ -76,7 +76,7 @@ class AdminController extends Controller
         ]);
 
         $reservation->car->update([
-            'availability_status' => 'booked'
+            'availability_status' => 'on rent'
         ]);
 
         return response()->json([
