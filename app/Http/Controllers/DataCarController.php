@@ -104,6 +104,7 @@ class DataCarController extends Controller
             'description' => 'required|string',
             'plate_number' => 'required|string',
             'transmisi' => 'required|in:automatic,manual',
+            'availability_status' => 'required',
             'kategori' => 'required|in:MPV,sedan,hatchback,SUV'
         ]);
 
@@ -129,6 +130,7 @@ class DataCarController extends Controller
                 'description' => $request->description,
                 'plate_number' => $request->plate_number,
                 'kategori' => $request->kategori,
+                'availability_status' => $request->availability_status,
                 'transmisi' => $request->transmisi,
                 'image' => $data_car->image
             ]);
