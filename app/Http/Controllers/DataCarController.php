@@ -94,7 +94,7 @@ class DataCarController extends Controller
     public function update(Request $request, DataCar $data_car)
     {
  
-        $result = $request->validate([
+        $request->validate([
             'image' => 'nullable|image|mimes:jpg,jpeg,png|max:5048',
             'name_car' => 'required|string',
             'passenger_capacity' => 'required|integer',
@@ -104,9 +104,10 @@ class DataCarController extends Controller
             'description' => 'required|string',
             'plate_number' => 'required|string',
             'transmisi' => 'required|in:automatic,manual',
-            'availability_status' => 'required',
+            'availability_status' => 'required|in:available,rented,maintenance',
             'kategori' => 'required|in:MPV,sedan,hatchback,SUV'
         ]);
+
 
         try {
 
@@ -121,6 +122,8 @@ class DataCarController extends Controller
                 $data_car->image = $path;
             }
 
+            
+
             $data_car->update([
                 'name_car' => $request->name_car,
                 'passenger_capacity' => $request->passenger_capacity,
@@ -134,6 +137,8 @@ class DataCarController extends Controller
                 'transmisi' => $request->transmisi,
                 'image' => $data_car->image
             ]);
+
+            $data_car->refresh();
 
             return response()->json([
                 'status' => 'success',

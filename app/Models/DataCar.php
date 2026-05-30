@@ -19,7 +19,8 @@ class DataCar extends Model
         'price', 
         'description',
         'transmisi', 
-        'kategori'
+        'kategori', 
+        'availability_status'
     ];
 
     public function getImageUrlAttribute()
