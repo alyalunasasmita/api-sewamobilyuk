@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use App\Models\Reservation;
 use Illuminate\Http\Request;
 use App\Models\User; 
@@ -121,16 +122,6 @@ class ReservationsController extends Controller
 
         $amount = $total_price * 0.10; 
 
-        // Simpan payment
-        $payment = Payment::create([
-            'user_id' => $user->id,
-            'reservation_id' => $reservation->id,
-            'order_id' => $orderId,
-            'snap_token' => $snapToken,
-            'amount' => $amount,
-            'status' => 'pending',
-            'expired_at' => now()->addMinutes(10)
-        ]);
 
         $params = [
             'transaction_details' => [
@@ -147,10 +138,19 @@ class ReservationsController extends Controller
             ]
         ];
 
+        
         $snapToken = Snap::getSnapToken($params);
 
+        $payment = Payment::create([
+            'user_id' => $user->id,
+            'reservation_id' => $reservation->id,
+            'order_id' => $orderId,
+            'snap_token' => $snapToken,
+            'amount' => $amount,
+            'status' => 'pending',
+            'expired_at' => now()->addMinutes(10)
+        ]);
         DB::commit();
-
         return response()->json([
             'status' => 'success',
             'message' => 'Reservasi berhasil dibuat',
