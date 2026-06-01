@@ -18,7 +18,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory(10)->create();
+        // User::factory(10)->create();
 
         User::factory()->create([
             'name' => 'Test admin',
@@ -35,8 +35,8 @@ class DatabaseSeeder extends Seeder
             'username' => 'customer', 
         ]);
 
-        DataCar::factory(20)->create();
+        // DataCar::factory(20)->create();
 
-        Reservation::factory(10)->create();
+        // Reservation::factory(10)->create();
     }
 }
