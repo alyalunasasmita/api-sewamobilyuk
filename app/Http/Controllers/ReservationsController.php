@@ -161,7 +161,16 @@ try {
         'expired_at' => now()->addMinutes(10)
     ]);
 
+    \Log::info('PAYMENT CREATED', [
+        'id' => $payment->id,
+        'order_id' => $payment->order_id,
+    ]);
+
     DB::commit();
+
+    \Log::info('PAYMENT COMMITTED', [
+        'order_id' => $payment->order_id,
+    ]);
 
     return response()->json([
         'status' => 'success',
