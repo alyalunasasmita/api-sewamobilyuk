@@ -183,5 +183,18 @@ class AdminController extends Controller
             'data' => $user
         ]);
     }
+
+    public function reservationCompleted($id){
+        $resev = Reservation::find($id); 
+        if (!$resev){
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'reservasi tidak ditemukan'
+            ]);
+        }
+        $end_date = $resev->end_date; 
+        $now = Carbon::parse(now()); 
+        
+    }
     
 }

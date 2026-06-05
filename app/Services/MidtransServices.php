@@ -12,5 +12,7 @@ class MidtransServices
         Config::$isProduction = env('MIDTRANS_IS_PRODUCTION');
         Config::$isSanitized = true;
         Config::$is3ds = true;
+
+        
     }
 }

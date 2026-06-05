@@ -34,6 +34,6 @@ public function car()
 
 public function payment()
 {
-    return $this->hasOne(Payment::class);
+    return $this->hasOne(Payment::class, 'reservation_id');
 }
 }
