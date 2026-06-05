@@ -143,6 +143,8 @@ try {
         'gross_amount' => $amount
     ]);
 
+    dd(Config::$serverKey);
+
     $snapResponse = Snap::createTransaction($params);
 
     \Log::info('CREATE TRANSACTION RESPONSE', [
