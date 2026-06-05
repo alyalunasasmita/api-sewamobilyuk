@@ -143,7 +143,6 @@ try {
         'gross_amount' => $amount
     ]);
 
-    dd(Config::$serverKey);
 
     $snapResponse = Snap::createTransaction($params);
 
