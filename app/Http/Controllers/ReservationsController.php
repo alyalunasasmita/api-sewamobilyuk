@@ -164,7 +164,7 @@ try {
         'snap_token' => $snapToken,
         'amount' => $amount,
         'status' => 'pending',
-        'expired_at' => now()->addMinutes(10)
+        'expired_at' => now()->addMinutes(1)
     ]);
 
     \Log::info('PAYMENT CREATED', [
