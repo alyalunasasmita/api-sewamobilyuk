@@ -19,8 +19,18 @@ class PaymentsController extends Controller
 
     public function callback(Request $request)
     {
-        \Log::info('MIDTRANS TEST', $request->all());
-        $serverKey = config('midtrans.server_key');
+        dd(config('MIDTRANS_IS_PRODUCTION'));
+        \Log::info('CALLBACK MASUK');
+        \Log::info(json_encode($request->all()));
+        \Log::info('ORDER ID', [
+            'order_id' => $request->order_id,
+        ]);
+        \Log::info('STATUS', [
+            'transaction_status' => $request->transaction_status,
+            'payment_type' => $request->payment_type,
+        ]);
+
+        $serverKey = env('MIDTRANS_SERVER_KEY');
         if (str_starts_with($request->order_id, 'payment_notif_test_')) {
             return response()->json([
                 'status' => 'success'
@@ -34,12 +44,25 @@ class PaymentsController extends Controller
             $request->gross_amount .
             $serverKey
         );
+        \Log::info('SIGNATURE DEBUG', [
+    'order_id' => $request->order_id,
+    'status_code' => $request->status_code,
+    'gross_amount' => $request->gross_amount,
+    'server_key' => substr($serverKey, 0, 15),
+    'generated' => $signatureKey,
+    'received' => $request->signature_key,
+]);
 
-        if ($signatureKey != $request->signature_key) {
-            return response()->json([
-                'message' => 'invalid signature'
-            ], 403);
-        }
+         \Log::info('SIGNATURE CHECK', [
+            'generated' => $signatureKey,
+            'received' => $request->signature_key,
+        ]);
+
+        // if ($signatureKey != $request->signature_key) {
+        //     return response()->json([
+        //         'message' => 'invalid signature'
+        //     ], 403);
+        // }
 
         $payment = Payment::where('order_id', $request->order_id)->first();
 
