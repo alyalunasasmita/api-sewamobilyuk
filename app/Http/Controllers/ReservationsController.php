@@ -149,6 +149,12 @@ try {
         'response' => json_encode($snapResponse)
     ]);
 
+    $status = \Midtrans\Transaction::status($orderId);
+    \Log::info('STATUS CEK', [
+        'order_id' => $orderId,
+        'status' => json_encode($status)
+    ]);
+
     $snapToken = $snapResponse->token;
 
     $payment = Payment::create([
