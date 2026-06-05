@@ -15,106 +15,146 @@ use Midtrans\Snap;
 
 class PaymentsController extends Controller
 {
-
-
     public function callback(Request $request)
-    {
-        dd(config('MIDTRANS_IS_PRODUCTION'));
-        \Log::info('CALLBACK MASUK');
-        \Log::info(json_encode($request->all()));
-        \Log::info('ORDER ID', [
+{
+    $serverKey = env('MIDTRANS_SERVER_KEY');
+
+    if (
+        $request->order_id &&
+        str_starts_with($request->order_id, 'payment_notif_test_')
+    ) {
+        return response()->json([
+            'status' => 'success'
+        ]);
+    }
+
+    $signatureKey = hash(
+        'sha512',
+        $request->order_id .
+        $request->status_code .
+        $request->gross_amount .
+        $serverKey
+    );
+
+    if ($signatureKey !== $request->signature_key) {
+
+        \Log::warning('INVALID MIDTRANS SIGNATURE', [
             'order_id' => $request->order_id,
-        ]);
-        \Log::info('STATUS', [
-            'transaction_status' => $request->transaction_status,
-            'payment_type' => $request->payment_type,
+            'transaction_status' => $request->transaction_status
         ]);
 
-        $serverKey = env('MIDTRANS_SERVER_KEY');
-        if (str_starts_with($request->order_id, 'payment_notif_test_')) {
-            return response()->json([
-                'status' => 'success'
-            ]);
-        }
+        return response()->json([
+            'message' => 'invalid signature'
+        ], 403);
+    }
 
-        $signatureKey = hash(
-            'sha512',
-            $request->order_id .
-            $request->status_code .
-            $request->gross_amount .
-            $serverKey
-        );
-        \Log::info('SIGNATURE DEBUG', [
-    'order_id' => $request->order_id,
-    'status_code' => $request->status_code,
-    'gross_amount' => $request->gross_amount,
-    'server_key' => substr($serverKey, 0, 15),
-    'generated' => $signatureKey,
-    'received' => $request->signature_key,
-]);
+    $payment = Payment::with('reservation')
+        ->where('order_id', $request->order_id)
+        ->first();
 
-         \Log::info('SIGNATURE CHECK', [
-            'generated' => $signatureKey,
-            'received' => $request->signature_key,
+    if (!$payment) {
+
+        \Log::warning('PAYMENT NOT FOUND', [
+            'order_id' => $request->order_id
         ]);
 
-        // if ($signatureKey != $request->signature_key) {
-        //     return response()->json([
-        //         'message' => 'invalid signature'
-        //     ], 403);
-        // }
+        return response()->json([
+            'message' => 'payment tidak ditemukan'
+        ], 404);
+    }
 
-        $payment = Payment::where('order_id', $request->order_id)->first();
+    try {
 
-        if (!$payment) {
-            return response()->json([
-                'message' => 'payment tidak ditemukan'
-            ], 404);
-        }
+        \DB::beginTransaction();
 
         $transactionStatus = $request->transaction_status;
 
-        if ($transactionStatus == 'settlement') {
+        switch ($transactionStatus) {
 
-            $payment->update([
-                'status' => 'paid',
-                'paid_at' => now(),
-                'transaction_status' => $transactionStatus,
-                'payment_type' => $request->payment_type
-            ]);
+            case 'settlement':
 
-            $payment->reservation->update([
-                'reservations_status' => 'waiting_confirmation'
-            ]);
+                $payment->update([
+                    'status' => 'paid',
+                    'paid_at' => now(),
+                    'transaction_status' => $transactionStatus,
+                    'payment_type' => $request->payment_type
+                ]);
 
-            $payment->reservation->car->update([
-                'availability_status' => 'booked'
-            ]);
+                if ($payment->reservation) {
 
-        } elseif ($transactionStatus == 'expire') {
+                    $payment->reservation->update([
+                        'reservations_status' => 'waiting_confirmation'
+                    ]);
 
-            $payment->update([
-                'status' => 'expired'
-            ]);
+                    // Sesuaikan nama relasi
+                    if ($payment->reservation->car) {
+                        $payment->reservation->car->update([
+                            'availability_status' => 'booked'
+                        ]);
+                    }
+                }
 
-            $payment->reservation->update([
-                'reservations_status' => 'cancelled'
-            ]);
+                break;
 
-        } elseif ($transactionStatus == 'cancel') {
+            case 'expire':
 
-            $payment->update([
-                'status' => 'failed'
-            ]);
+                $payment->update([
+                    'status' => 'expired',
+                    'transaction_status' => $transactionStatus
+                ]);
 
-            $payment->reservation->update([
-                'reservations_status' => 'cancelled'
-            ]);
+                if ($payment->reservation) {
+                    $payment->reservation->update([
+                        'reservations_status' => 'cancelled'
+                    ]);
+                }
+
+                break;
+
+            case 'cancel':
+            case 'deny':
+
+                $payment->update([
+                    'status' => 'failed',
+                    'transaction_status' => $transactionStatus
+                ]);
+
+                if ($payment->reservation) {
+                    $payment->reservation->update([
+                        'reservations_status' => 'cancelled'
+                    ]);
+                }
+
+                break;
+
+            case 'pending':
+
+                $payment->update([
+                    'status' => 'pending',
+                    'transaction_status' => $transactionStatus
+                ]);
+
+                break;
         }
 
+        \DB::commit();
+
         return response()->json([
-            'status' => 'success',
-            'message' => 'callback berhasil'
+            'status' => 'success'
         ]);
+
+    } catch (\Exception $e) {
+
+        \DB::rollBack();
+
+        \Log::error('MIDTRANS CALLBACK ERROR', [
+            'order_id' => $request->order_id,
+            'message' => $e->getMessage()
+        ]);
+
+        return response()->json([
+            'message' => 'internal error'
+        ], 500);
     }
+}
 }

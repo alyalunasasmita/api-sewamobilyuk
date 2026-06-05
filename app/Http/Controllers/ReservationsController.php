@@ -129,7 +129,7 @@ try {
         ],
         'expiry' => [
             'unit' => 'minutes',
-            'duration' => 10
+            'duration' => 1
         ]
     ];
 
