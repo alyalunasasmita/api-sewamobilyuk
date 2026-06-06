@@ -52,6 +52,11 @@ class ReservationsController extends Controller
      */
     public function store(Request $request)
 {
+    dd([
+    'server' => gethostname(),
+    'env' => app()->environment(),
+    'db' => config('database.connections.mysql.database')
+]);
 $request->validate([
 'data_car_id' => 'required|exists:data_cars,id',
 'start_date' => 'required|date',
