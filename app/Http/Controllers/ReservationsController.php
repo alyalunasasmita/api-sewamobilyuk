@@ -149,11 +149,9 @@ try {
 
     $snapResponse = Snap::createTransaction($params);
 
-    \Log::info('MIDTRANS FINAL', [
-        'order_id' => $orderId,
-        'token' => $snapResponse->token,
-        'redirect_url' => $snapResponse->redirect_url
-    ]);
+    $status = \Midtrans\Transaction::status($orderId);
+
+    dd($status);
 
     $snapToken = $snapResponse->token;
 
