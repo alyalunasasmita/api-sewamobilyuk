@@ -17,19 +17,18 @@ class PaymentsController extends Controller
 {
     public function callback(Request $request)
 {
-
+    \Log::info('==============================');
     \Log::info('MASUK CONTROLLER CALLBACK');
+
+    \Log::info('RAW BODY', [
+        'content' => $request->getContent()
+    ]);
+
+    \Log::info('REQUEST ALL', $request->all());
 
     $serverKey = env('MIDTRANS_SERVER_KEY');
 
-    if (
-        $request->order_id &&
-        str_starts_with($request->order_id, 'payment_notif_test_')
-    ) {
-        return response()->json([
-            'status' => 'success'
-        ]);
-    }
+    \Log::info('SEBELUM SIGNATURE');
 
     $signatureKey = hash(
         'sha512',
@@ -38,6 +37,13 @@ class PaymentsController extends Controller
         $request->gross_amount .
         $serverKey
     );
+
+    \Log::info('SETELAH SIGNATURE', [
+        'order_id' => $request->order_id,
+        'transaction_status' => $request->transaction_status,
+        'signature_request' => $request->signature_key,
+        'signature_generated' => $signatureKey,
+    ]);
 
     if ($signatureKey !== $request->signature_key) {
 
@@ -51,9 +57,16 @@ class PaymentsController extends Controller
         ], 403);
     }
 
+    \Log::info('SIGNATURE VALID');
+
     $payment = Payment::with('reservation')
         ->where('order_id', $request->order_id)
         ->first();
+
+    \Log::info('HASIL PAYMENT', [
+        'found' => $payment ? true : false,
+        'order_id' => $request->order_id
+    ]);
 
     if (!$payment) {
 
@@ -66,15 +79,23 @@ class PaymentsController extends Controller
         ], 404);
     }
 
+    \Log::info('PAYMENT DITEMUKAN');
+
     try {
 
         \DB::beginTransaction();
 
         $transactionStatus = $request->transaction_status;
 
+        \Log::info('STATUS TRANSAKSI', [
+            'status' => $transactionStatus
+        ]);
+
         switch ($transactionStatus) {
 
             case 'settlement':
+
+                \Log::info('MASUK SETTLEMENT');
 
                 $payment->update([
                     'status' => 'paid',
@@ -83,54 +104,44 @@ class PaymentsController extends Controller
                     'payment_type' => $request->payment_type
                 ]);
 
-                if ($payment->reservation) {
-
-                    $payment->reservation->update([
-                        'reservations_status' => 'waiting_confirmation'
-                    ]);
-
-                    // Sesuaikan nama relasi
-                    if ($payment->reservation->car) {
-                        $payment->reservation->car->update([
-                            'availability_status' => 'booked'
-                        ]);
-                    }
-                }
-
                 break;
 
             case 'expire':
+
+                \Log::info('MASUK EXPIRE');
 
                 $payment->update([
                     'status' => 'expired',
                     'transaction_status' => $transactionStatus
                 ]);
 
-                if ($payment->reservation) {
-                    $payment->reservation->update([
-                        'reservations_status' => 'cancelled'
-                    ]);
-                }
-
                 break;
 
             case 'cancel':
-            case 'deny':
+
+                \Log::info('MASUK CANCEL');
 
                 $payment->update([
                     'status' => 'failed',
                     'transaction_status' => $transactionStatus
                 ]);
 
-                if ($payment->reservation) {
-                    $payment->reservation->update([
-                        'reservations_status' => 'cancelled'
-                    ]);
-                }
+                break;
+
+            case 'deny':
+
+                \Log::info('MASUK DENY');
+
+                $payment->update([
+                    'status' => 'failed',
+                    'transaction_status' => $transactionStatus
+                ]);
 
                 break;
 
             case 'pending':
+
+                \Log::info('MASUK PENDING');
 
                 $payment->update([
                     'status' => 'pending',
@@ -138,9 +149,17 @@ class PaymentsController extends Controller
                 ]);
 
                 break;
+
+            default:
+
+                \Log::warning('STATUS TIDAK DIKENAL', [
+                    'status' => $transactionStatus
+                ]);
         }
 
         \DB::commit();
+
+        \Log::info('UPDATE BERHASIL');
 
         return response()->json([
             'status' => 'success'
@@ -151,8 +170,9 @@ class PaymentsController extends Controller
         \DB::rollBack();
 
         \Log::error('MIDTRANS CALLBACK ERROR', [
-            'order_id' => $request->order_id,
-            'message' => $e->getMessage()
+            'message' => $e->getMessage(),
+            'line' => $e->getLine(),
+            'file' => $e->getFile()
         ]);
 
         return response()->json([
