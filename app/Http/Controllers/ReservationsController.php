@@ -143,6 +143,8 @@ try {
         'gross_amount' => $amount
     ]);
 
+    \Log::info('PARAMS MIDTRANS', $params);
+
 
     $snapResponse = Snap::createTransaction($params);
 
