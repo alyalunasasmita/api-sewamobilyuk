@@ -149,13 +149,11 @@ try {
 
     $snapResponse = Snap::createTransaction($params);
 
-    sleep(5);
-
-    dd([
-    'order_id' => $orderId,
-    'token' => $snapResponse->token,
-    'redirect_url' => $snapResponse->redirect_url,
-]);
+    \Log::info('MIDTRANS FINAL', [
+        'order_id' => $orderId,
+        'token' => $snapResponse->token,
+        'redirect_url' => $snapResponse->redirect_url
+    ]);
 
     $snapToken = $snapResponse->token;
 
