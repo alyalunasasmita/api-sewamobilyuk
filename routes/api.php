@@ -73,6 +73,8 @@ Route::middleware(['role:customer'])->group(function(){
 
 });
 
+Route::post('/midtrans/callback', [PaymentsController::class, 'callback']);
+
 //trakcer 
 Route::post('/tracker/ping', [TrackerController::class, 'ping']);
 Route::post('/tracker/stop', [TrackerController::class, 'stop']);
@@ -82,4 +84,4 @@ Route::post('/tracker/generate-token', [TrackerController::class, 'generateToken
 Route::delete('/tracker/{id}', [TrackerController::class, 'destroy']);
 Route::get('/tracker/history/{carId}', [TrackerController::class, 'history']);
 
-Route::post('/midtrans/callback', [PaymentsController::class, 'callback']);
+
