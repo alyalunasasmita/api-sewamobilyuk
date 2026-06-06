@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use App\Models\User; 
 use App\Models\DataCar;
 use App\Models\Payment;
-use App\Services\MidtransServices;
+use App\Services\MidtransService;
 use Carbon\Carbon;
 use Midtrans\Config;
 use Midtrans\Snap;
@@ -112,7 +112,7 @@ try {
     ]);
 
     // Midtrans Init
-    MidtransServices::init();
+    MidtransService::init();
 
     $orderId = 'ORDER-' . Str::uuid();
 

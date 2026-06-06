@@ -4,7 +4,7 @@ namespace App\Services;
 
 use Midtrans\Config;
 
-class MidtransServices
+class MidtransService
 {
     public static function init()
     {
