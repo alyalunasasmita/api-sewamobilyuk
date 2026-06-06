@@ -52,11 +52,7 @@ class ReservationsController extends Controller
      */
     public function store(Request $request)
 {
-    dd([
-    'server' => gethostname(),
-    'env' => app()->environment(),
-    'db' => config('database.connections.mysql.database')
-]);
+    
 $request->validate([
 'data_car_id' => 'required|exists:data_cars,id',
 'start_date' => 'required|date',
@@ -154,6 +150,12 @@ try {
     $snapResponse = Snap::createTransaction($params);
 
     sleep(5);
+
+    dd([
+    'order_id' => $orderId,
+    'token' => $snapResponse->token,
+    'redirect_url' => $snapResponse->redirect_url,
+]);
 
     $snapToken = $snapResponse->token;
 
