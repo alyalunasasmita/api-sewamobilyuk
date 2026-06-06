@@ -155,6 +155,8 @@ try {
         'status' => json_encode($status)
     ]);
 
+    dd($snapResponse);
+
     $snapToken = $snapResponse->token;
 
     $payment = Payment::create([
@@ -173,10 +175,6 @@ try {
     ]);
 
     DB::commit();
-
-    \Log::info('PAYMENT COMMITTED', [
-        'order_id' => $payment->order_id,
-    ]);
 
     return response()->json([
         'status' => 'success',
