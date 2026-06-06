@@ -149,10 +149,6 @@ try {
 
     $snapResponse = Snap::createTransaction($params);
 
-    $status = \Midtrans\Transaction::status($orderId);
-
-    dd($status);
-
     $snapToken = $snapResponse->token;
 
     $payment = Payment::create([
