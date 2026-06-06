@@ -17,6 +17,13 @@ class PaymentsController extends Controller
 {
     public function callback(Request $request)
 {
+
+    file_put_contents(
+            storage_path('logs/callback.txt'),
+            now() . ' CALLBACK MASUK' . PHP_EOL,
+            FILE_APPEND
+        );
+
     $serverKey = env('MIDTRANS_SERVER_KEY');
 
     if (

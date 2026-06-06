@@ -145,22 +145,10 @@ try {
 
     \Log::info('PARAMS MIDTRANS', $params);
 
-    // Midtrans Init
-    MidtransServices::init();
-
-    dd([
-        'server_key' => Config::$serverKey,
-        'is_production' => Config::$isProduction,
-        'type' => gettype(Config::$isProduction)
-    ]);
 
     $snapResponse = Snap::createTransaction($params);
 
     sleep(5);
-
-    $status = \Midtrans\Transaction::status($orderId);
-
-    dd($status);
 
     $snapToken = $snapResponse->token;
 
