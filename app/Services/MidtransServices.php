@@ -9,7 +9,10 @@ class MidtransServices
     public static function init()
     {
         Config::$serverKey = env('MIDTRANS_SERVER_KEY');
-        Config::$isProduction = env('MIDTRANS_IS_PRODUCTION');
+        Config::$isProduction = filter_var(
+            env('MIDTRANS_IS_PRODUCTION'),
+            FILTER_VALIDATE_BOOLEAN
+        );
         Config::$isSanitized = true;
         Config::$is3ds = true;
 
