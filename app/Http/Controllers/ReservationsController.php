@@ -150,6 +150,11 @@ try {
         'response' => json_encode($snapResponse)
     ]);
 
+    $status = \Midtrans\Transaction::status($orderId);
+    \Log::info('STATUS TEST', [
+        'status' => json_encode($status)
+    ]);
+
     $snapToken = $snapResponse->token;
 
     $payment = Payment::create([
