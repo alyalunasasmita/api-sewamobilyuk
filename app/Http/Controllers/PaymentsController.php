@@ -20,9 +20,6 @@ class PaymentsController extends Controller
 
     \Log::info('MASUK CONTROLLER CALLBACK');
 
-    return response()->json([
-        'ok' => true
-    ]);
     $serverKey = env('MIDTRANS_SERVER_KEY');
 
     if (
