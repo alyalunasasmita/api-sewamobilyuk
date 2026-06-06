@@ -148,6 +148,10 @@ try {
 
     $snapResponse = Snap::createTransaction($params);
 
+    sleep(5);
+    $status = \Midtrans\Transaction::status($orderId);
+    dd($status);
+
     \Log::info('CREATE TRANSACTION RESPONSE', [
         'response' => json_encode($snapResponse)
     ]);
