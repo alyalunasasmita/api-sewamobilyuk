@@ -115,6 +115,13 @@ class PaymentsController extends Controller
                     'transaction_status' => $transactionStatus
                 ]);
 
+                if ($payment->reservation) {
+                    $payment->reservation->update([
+                        'reservations_status' => 'failed', 
+                        'expired_at' => now()
+                    ]);
+                }
+
                 break;
 
             case 'cancel':
