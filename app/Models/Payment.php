@@ -18,7 +18,8 @@ class Payment extends Model
         'payment_type',
         'payment_method',
         'expired_at', 
-        'paid_at'
+        'paid_at', 
+        'tax_amount'
     ];
 
     function reservation(){

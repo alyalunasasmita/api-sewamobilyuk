@@ -49,6 +49,10 @@ Route::middleware(['role:admin'])->group(function(){
     Route::patch('/rejected-reservation/{id}',[AdminController::class, 'RejectReserv']); 
     Route::get('/reservations', [AdminController::class, 'listReservasi']);
     Route::get('/reservation/{id}', [AdminController::class, 'detailReserv']); 
+    Route::patch('/cashConfirm/{id}', [AdminController::class, 'confirmCashPayment']); 
+    Route::patch('/confirmResevDone/{id}', [AdminController::class, 'reservationCompleted']); 
+    Route::patch('/startReserv/{id}', [AdminController::class, 'startRental']); 
+
 
     //manajemen pelanggan 
     Route::get('/customer-profile', [AdminController::class, 'customerProfile']);
@@ -66,6 +70,7 @@ Route::middleware(['role:customer'])->group(function(){
     //reservasi 
     Route::post('/add-reservation', [ReservationsController::class, 'store']);
     Route::get('/history-reservation', [ReservationsController::class, 'index']);
+    Route::get('/detail-reservation/{$reservations}', [ReservationsController::class, 'show']);
     Route::patch('/cancel-reserv/{id}', [ReservationsController::class, 'cancel']);
 
     //pembayaran 

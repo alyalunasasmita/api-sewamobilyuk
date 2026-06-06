@@ -51,148 +51,160 @@ class ReservationsController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-{
-    
-$request->validate([
-'data_car_id' => 'required|exists:data_cars,id',
-'start_date' => 'required|date',
-'end_date' => 'required|date|after_or_equal:start_date'
-]);
+    {
+        $request->validate([
+            'data_car_id' => 'required|exists:data_cars,id',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'payment_method' => 'required|in:cash,midtrans'
+        ]);
 
-$user = $request->attributes->get('user');
+        $user = $request->attributes->get('user');
 
-try {
+        try {
 
-    DB::beginTransaction();
+            DB::beginTransaction();
 
-    $car = Datacar::where('id', $request->data_car_id)
-        ->where('availability_status', 'available')
-        ->lockForUpdate()
-        ->first();
+            $car = Datacar::where('id', $request->data_car_id)
+                ->where('availability_status', 'available')
+                ->lockForUpdate()
+                ->first();
 
-    if (!$car) {
-        throw new \Exception('Mobil tidak tersedia');
+            if (!$car) {
+                throw new \Exception('Mobil tidak tersedia');
+            }
+
+            $isBooked = Reservation::where('data_car_id', $request->data_car_id)
+                ->whereIn('reservations_status', [
+                    'waiting_payment',
+                    'pending_approval',
+                    'confirmed',
+                    'on-rent'
+                ])
+                ->where('start_date', '<=', $request->end_date)
+                ->where('end_date', '>=', $request->start_date)
+                ->exists();
+
+            if ($isBooked) {
+                throw new \Exception('Mobil sudah direservasi pada tanggal tersebut');
+            }
+
+            $start = Carbon::parse($request->start_date);
+            $end = Carbon::parse($request->end_date);
+
+            $count_days = max(1, $start->diffInDays($end));
+            $total_price = $car->price * $count_days;
+
+            $reservationStatus = $request->payment_method === 'cash'
+            ? 'pending_cash'
+            : 'waiting_payment';
+
+            $reservation = Reservation::create([
+                'user_id' => $user->id,
+                'data_car_id' => $request->data_car_id,
+                'start_date' => $start,
+                'end_date' => $end,
+                'count_days' => $count_days,
+                'total_price' => $total_price,
+                'reservations_status' => $reservationStatus,
+            ]);
+
+            $reservation->update([
+                'no_reservasi' => 'RSV-' .
+                    now()->format('Ymd') .
+                    '-' .
+                    str_pad($reservation->id, 5, '0', STR_PAD_LEFT)
+            ]);
+
+            $tax = $total_price * 0.10;
+            $amount = round($total_price + $tax);
+
+            if ($request->payment_method === 'cash') {
+
+                $payment = Payment::create([
+                    'user_id' => $user->id,
+                    'reservation_id' => $reservation->id,
+                    'amount' => $amount,
+                    'payment_method' => 'cash',
+                    'status' => 'pending',
+                    'tax_amount' => $tax
+                ]);
+
+                DB::commit();
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Reservasi berhasil dibuat',
+                    'reservation' => $reservation,
+                    'payment' => $payment, 
+                    'subtotal' => $total_price, 
+                    'pajak' => $tax
+                ], 201);
+            }
+
+            /**
+             * MIDTRANS
+             */
+            MidtransService::init();
+
+            $orderId = 'ORDER-' . Str::uuid();
+
+            $params = [
+                'transaction_details' => [
+                    'order_id' => $orderId,
+                    'gross_amount' => $amount,
+                ],
+                'customer_details' => [
+                    'first_name' => $user->name,
+                    'email' => $user->email,
+                ],
+                'expiry' => [
+                    'unit' => 'minutes',
+                    'duration' => 10
+                ]
+            ];
+
+            $snapResponse = Snap::createTransaction($params);
+
+            $payment = Payment::create([
+                'user_id' => $user->id,
+                'reservation_id' => $reservation->id,
+                'order_id' => $orderId,
+                'snap_token' => $snapResponse->token,
+                'amount' => $amount,
+                'payment_method' => 'midtrans',
+                'status' => 'pending',
+                'tax_amount' => $tax, 
+                'expired_at' => now()->addMinutes(10)
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Reservasi berhasil dibuat',
+                'reservation' => $reservation,
+                'payment' => $payment,
+                'snap_token' => $snapResponse->token,
+                'redirect_url' => $snapResponse->redirect_url,
+                'pajak' => $tax, 
+                'subtotal' => $total_price
+            ], 201);
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            \Log::error('RESERVATION ERROR', [
+                'message' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 409);
+        }
     }
-
-    $isBooked = Reservation::where('data_car_id', $request->data_car_id)
-        ->whereIn('reservations_status', [
-            'waiting_payment',
-            'pending_approval',
-            'confirmed',
-            'on-rent'
-        ])
-        ->where('start_date', '<=', $request->end_date)
-        ->where('end_date', '>=', $request->start_date)
-        ->exists();
-
-    if ($isBooked) {
-        throw new \Exception('Mobil sudah direservasi pada tanggal tersebut');
-    }
-
-    $start = Carbon::parse($request->start_date);
-    $end = Carbon::parse($request->end_date);
-
-    $count_days = max(1, $start->diffInDays($end));
-    $total_price = $car->price * $count_days;
-
-    $reservation = Reservation::create([
-        'user_id' => $user->id,
-        'data_car_id' => $request->data_car_id,
-        'start_date' => $start,
-        'end_date' => $end,
-        'count_days' => $count_days,
-        'total_price' => $total_price,
-        'reservations_status' => 'waiting_payment',
-    ]);
-
-    $reservation->update([
-        'no_reservasi' => 'RSV-' .
-            now()->format('Ymd') .
-            '-' .
-            str_pad($reservation->id, 5, '0', STR_PAD_LEFT)
-    ]);
-
-    // Midtrans Init
-    MidtransService::init();
-
-    $orderId = 'ORDER-' . Str::uuid();
-
-    $amount = round($total_price * 0.10);
-
-    $params = [
-        'transaction_details' => [
-            'order_id' => $orderId,
-            'gross_amount' => $amount,
-        ],
-        'customer_details' => [
-            'first_name' => $user->name,
-            'email' => $user->email,
-        ],
-        'expiry' => [
-            'unit' => 'minutes',
-            'duration' => 1
-        ]
-    ];
-
-    \Log::info('MIDTRANS CONFIG', [
-        'server_key' => substr(Config::$serverKey, 0, 15),
-        'is_production' => Config::$isProduction,
-    ]);
-
-    \Log::info('ORDER CREATED', [
-        'order_id' => $orderId,
-        'gross_amount' => $amount
-    ]);
-
-    \Log::info('PARAMS MIDTRANS', $params);
-
-
-    $snapResponse = Snap::createTransaction($params);
-
-    $snapToken = $snapResponse->token;
-
-    $payment = Payment::create([
-        'user_id' => $user->id,
-        'reservation_id' => $reservation->id,
-        'order_id' => $orderId,
-        'snap_token' => $snapToken,
-        'amount' => $amount,
-        'status' => 'pending',
-        'expired_at' => now()->addMinutes(1)
-    ]);
-
-    \Log::info('PAYMENT CREATED', [
-        'id' => $payment->id,
-        'order_id' => $payment->order_id,
-    ]);
-
-    DB::commit();
-
-    return response()->json([
-        'status' => 'success',
-        'message' => 'Reservasi berhasil dibuat',
-        'reservation' => $reservation,
-        'payment' => $payment,
-        'snap_token' => $snapToken,
-        'redirect_url' => $snapResponse->redirect_url
-    ], 201);
-
-} catch (\Exception $e) {
-
-    DB::rollBack();
-
-    \Log::error('RESERVATION ERROR', [
-        'message' => $e->getMessage()
-    ]);
-
-    return response()->json([
-        'status' => 'error',
-        'message' => $e->getMessage()
-    ], 409);
-}
-
-
-}
 
 
     /**
@@ -200,6 +212,10 @@ try {
      */
     public function show(Reservations $reservations)
     {
+        $reservation->load([
+            'car',
+            'payment'
+        ]);
         return response()->json([
             'status' => 'success', 
             'data' => $reservations
@@ -230,22 +246,49 @@ try {
         //
     }
 
-    public function cancel($id){
+    public function cancel($id)
+    {
         $reservation = Reservation::find($id);
-        if(!$reservation){
+
+        if (!$reservation) {
             return response()->json([
-                'status' => 'error', 
+                'status' => 'error',
                 'message' => 'data tidak ditemukan'
-            ]);            
+            ], 404);
         }
+
+        if ($reservation->reservations_status === 'cancelled') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'reservasi sudah dibatalkan'
+            ], 400);
+        }
+
+        $startDate = Carbon::parse($reservation->start_date)->startOfDay();
+        $today = now()->startOfDay();
+
+        if ($today->gte($startDate->copy()->subDay())) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'reservasi tidak dapat dibatalkan mulai H-1'
+            ], 400);
+        }
+
         $reservation->update([
-            'reservations_status' => 'cancelled', 
+            'reservations_status' => 'cancelled',
             'refund_status' => 'pending',
             'cancelled_at' => now()
-        ]); 
-        
+        ]);
+
+        if ($reservation->car) {
+            $reservation->car->update([
+                'availability_status' => 'available'
+            ]);
+        }
+
         return response()->json([
-            'message' => 'Reservasi berhasil dibatalkan'
+            'status' => 'success',
+            'message' => 'reservasi berhasil dibatalkan'
         ]);
     }
 }
