@@ -11,6 +11,7 @@ use App\Http\Controllers\PaymentsController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TrackerController;
 use App\Http\Controllers\OtpController;
+use App\Http\Controllers\NotificationsController;
 
 use App\Http\Controllers\ProfileUser;
 
@@ -75,6 +76,13 @@ Route::middleware(['role:customer'])->group(function(){
 
     //pembayaran 
     // Route::post('/payment', [PaymentsController::class, 'store']); 
+
+    //notification
+    Route::get('/notifications', [NotificationsController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationsController::class, 'unreadCount']);
+    Route::patch('/notifications/{id}/read', [NotificationsController::class, 'read']);
+
+
 
 });
 

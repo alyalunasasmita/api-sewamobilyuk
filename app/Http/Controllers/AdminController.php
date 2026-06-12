@@ -36,6 +36,11 @@ class AdminController extends Controller
         }
         try {
             $result = RefundService::process($payment);
+            Notification::create([
+                'user_id' => $reservation->user_id,
+                'title' => 'Refund Disetujui',
+                'message' => 'dana pembayaran Anda dengan nomor ' . $reservation->payment->order_id . ' telah dikembalikan .'
+            ]);
             return response()->json([
                 'status' => 'success',
                 'message' => 'refund berhasil',
@@ -77,6 +82,12 @@ class AdminController extends Controller
 
         $reservation->car->update([
             'availability_status' => 'on rent'
+        ]);
+
+        Notification::create([
+            'user_id' => $reservation->user_id,
+            'title' => 'Reservasi Disetujui',
+            'message' => 'Reservasi Anda telah disetujui admin.'
         ]);
 
         return response()->json([
@@ -223,6 +234,12 @@ class AdminController extends Controller
             'availability_status' => 'available'
         ]);
 
+        Notification::create([
+            'user_id' => $reservation->user_id,
+            'title' => 'Reservasi Selesai',
+            'message' => 'Reservasi Anda dengan nomor ' . $reservation->no_reservasi . ' telah selesai.'
+        ]);
+
         return response()->json([
             'status' => 'success',
             'late_days' => $lateDays,
@@ -264,6 +281,12 @@ class AdminController extends Controller
             'reservations_status' => 'waiting_confirmation'
         ]);
 
+        Notification::create([
+            'user_id' => $reservation->user_id,
+            'title' => 'Pembayaran Cash berhasil',
+            'message' => 'Pembauaran Anda dengan nomor ' . $reservation->payment->order_id . ' sudah dibayar dengan metode Cash.'
+        ]);
+
         return response()->json([
             'status' => 'success',
             'message' => 'pembayaran cash berhasil dikonfirmasi'
@@ -294,6 +317,12 @@ class AdminController extends Controller
 
         $reservation->car->update([
             'availability_status' => 'on-rent'
+        ]);
+
+        Notification::create([
+            'user_id' => $reservation->user_id,
+            'title' => 'Rental dimulai',
+            'message' => 'Reservasi Anda dengan nomor ' . $reservation->no_reservasi . ' telah dimulai.'
         ]);
 
         return response()->json([

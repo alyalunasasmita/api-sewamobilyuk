@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Payment;
 use App\Models\Reservation;
+use App\Models\Notification;
 use App\Services\MidtransService;
 use Illuminate\Http\Request;
 use Midtrans\Transaction;
@@ -17,175 +18,193 @@ class PaymentsController extends Controller
 {
     public function callback(Request $request)
 {
+
+\Log::info('MIDTRANS CALLBACK', $request->all());
+
+        return response()->json([
+            'status' => 'ok'
+        ], 200);
     
-    \Log::info('==============================');
-    \Log::info('MASUK CONTROLLER CALLBACK');
+//     \Log::info('==============================');
+//     \Log::info('MASUK CONTROLLER CALLBACK');
 
-    \Log::info('RAW BODY', [
-        'content' => $request->getContent()
-    ]);
+//     \Log::info('RAW BODY', [
+//         'content' => $request->getContent()
+//     ]);
 
-    \Log::info('REQUEST ALL', $request->all());
+//     \Log::info('REQUEST ALL', $request->all());
 
-    $serverKey = env('MIDTRANS_SERVER_KEY');
+//     $serverKey = env('MIDTRANS_SERVER_KEY');
 
-    \Log::info('SEBELUM SIGNATURE');
+//     \Log::info('SEBELUM SIGNATURE');
 
-    $signatureKey = hash(
-        'sha512',
-        $request->order_id .
-        $request->status_code .
-        $request->gross_amount .
-        $serverKey
-    );
+//     $signatureKey = hash(
+//         'sha512',
+//         $request->order_id .
+//         $request->status_code .
+//         $request->gross_amount .
+//         $serverKey
+//     );
 
-    \Log::info('SETELAH SIGNATURE', [
-        'order_id' => $request->order_id,
-        'transaction_status' => $request->transaction_status,
-        'signature_request' => $request->signature_key,
-        'signature_generated' => $signatureKey,
-    ]);
+//     \Log::info('SETELAH SIGNATURE', [
+//         'order_id' => $request->order_id,
+//         'transaction_status' => $request->transaction_status,
+//         'signature_request' => $request->signature_key,
+//         'signature_generated' => $signatureKey,
+//     ]);
 
-    if ($signatureKey !== $request->signature_key) {
+//     if ($signatureKey !== $request->signature_key) {
 
-        \Log::warning('INVALID MIDTRANS SIGNATURE', [
-            'order_id' => $request->order_id,
-            'transaction_status' => $request->transaction_status
-        ]);
+//         \Log::warning('INVALID MIDTRANS SIGNATURE', [
+//             'order_id' => $request->order_id,
+//             'transaction_status' => $request->transaction_status
+//         ]);
 
-        return response()->json([
-            'message' => 'invalid signature'
-        ], 403);
-    }
+//         return response()->json([
+//             'message' => 'invalid signature'
+//         ], 403);
+//     }
 
-    \Log::info('SIGNATURE VALID');
+//     \Log::info('SIGNATURE VALID');
 
-    $payment = Payment::with('reservation')
-        ->where('order_id', $request->order_id)
-        ->first();
+//     $payment = Payment::with('reservation')
+//         ->where('order_id', $request->order_id)
+//         ->first();
 
-    \Log::info('HASIL PAYMENT', [
-        'found' => $payment ? true : false,
-        'order_id' => $request->order_id
-    ]);
+//     \Log::info('HASIL PAYMENT', [
+//         'found' => $payment ? true : false,
+//         'order_id' => $request->order_id
+//     ]);
 
-    if (!$payment) {
+//     if (!$payment) {
 
-        \Log::warning('PAYMENT NOT FOUND', [
-            'order_id' => $request->order_id
-        ]);
+//         \Log::warning('PAYMENT NOT FOUND', [
+//             'order_id' => $request->order_id
+//         ]);
 
-        return response()->json([
-            'message' => 'payment tidak ditemukan'
-        ], 404);
-    }
+//         return response()->json([
+//             'message' => 'payment tidak ditemukan'
+//         ], 404);
+//     }
 
-    \Log::info('PAYMENT DITEMUKAN');
+//     \Log::info('PAYMENT DITEMUKAN');
 
-    try {
+//     try {
 
-        \DB::beginTransaction();
+//         \DB::beginTransaction();
 
-        $transactionStatus = $request->transaction_status;
+//         $transactionStatus = $request->transaction_status;
 
-        \Log::info('STATUS TRANSAKSI', [
-            'status' => $transactionStatus
-        ]);
+//         \Log::info('STATUS TRANSAKSI', [
+//             'status' => $transactionStatus
+//         ]);
 
-        switch ($transactionStatus) {
+//         switch ($transactionStatus) {
 
-            case 'settlement':
+//             case 'settlement':
 
-                \Log::info('MASUK SETTLEMENT');
+//                 \Log::info('MASUK SETTLEMENT');
 
-                $payment->update([
-                    'status' => 'paid',
-                    'paid_at' => now(),
-                    'transaction_status' => $transactionStatus,
-                    'payment_type' => $request->payment_type
-                ]);
+//                 $payment->update([
+//                     'status' => 'paid',
+//                     'paid_at' => now(),
+//                     'transaction_status' => $transactionStatus,
+//                     'payment_type' => $request->payment_type
+//                 ]);
 
-                break;
+//                 Notification::create([
+//                     'user_id' => $payment->user->id,
+//                     'title' => 'Reservasi Berhasil',
+//                     'message' => 'Pembayaran untuk ' . $payment->order_id  .' berhasil '
+//                 ]);
 
-            case 'expire':
+//                 break;
 
-                \Log::info('MASUK EXPIRE');
+//             case 'expire':
 
-                $payment->update([
-                    'status' => 'expired',
-                    'transaction_status' => $transactionStatus
-                ]);
+//                 \Log::info('MASUK EXPIRE');
 
-                if ($payment->reservation) {
-                    $payment->reservation->update([
-                        'reservations_status' => 'cancelled', 
-                        'expired_at' => now()
-                    ]);
-                }
+//                 $payment->update([
+//                     'status' => 'expired',
+//                     'transaction_status' => $transactionStatus
+//                 ]);
 
-                break;
+//                 if ($payment->reservation) {
+//                     $payment->reservation->update([
+//                         'reservations_status' => 'cancelled', 
+//                         'expired_at' => now()
+//                     ]);
+//                 }
 
-            case 'cancel':
+//                  Notification::create([
+//                     'user_id' => $payment->user->id,
+//                     'title' => 'Reservasi Berhasil',
+//                     'message' => 'Pembayaran untuk ' . $payment->order_id  .' telah kadaluarsa, silahkan membuat reservasi kembali '
+//                 ]);
 
-                \Log::info('MASUK CANCEL');
+//                 break;
 
-                $payment->update([
-                    'status' => 'failed',
-                    'transaction_status' => $transactionStatus
-                ]);
+//             case 'cancel':
 
-                break;
+//                 \Log::info('MASUK CANCEL');
 
-            case 'deny':
+//                 $payment->update([
+//                     'status' => 'failed',
+//                     'transaction_status' => $transactionStatus
+//                 ]);
 
-                \Log::info('MASUK DENY');
+//                 break;
 
-                $payment->update([
-                    'status' => 'failed',
-                    'transaction_status' => $transactionStatus
-                ]);
+//             case 'deny':
 
-                break;
+//                 \Log::info('MASUK DENY');
 
-            case 'pending':
+//                 $payment->update([
+//                     'status' => 'failed',
+//                     'transaction_status' => $transactionStatus
+//                 ]);
 
-                \Log::info('MASUK PENDING');
+//                 break;
 
-                $payment->update([
-                    'status' => 'pending',
-                    'transaction_status' => $transactionStatus
-                ]);
+//             case 'pending':
 
-                break;
+//                 \Log::info('MASUK PENDING');
 
-            default:
+//                 $payment->update([
+//                     'status' => 'pending',
+//                     'transaction_status' => $transactionStatus
+//                 ]);
 
-                \Log::warning('STATUS TIDAK DIKENAL', [
-                    'status' => $transactionStatus
-                ]);
-        }
+//                 break;
 
-        \DB::commit();
+//             default:
 
-        \Log::info('UPDATE BERHASIL');
+//                 \Log::warning('STATUS TIDAK DIKENAL', [
+//                     'status' => $transactionStatus
+//                 ]);
+//         }
 
-        return response()->json([
-            'status' => 'success'
-        ]);
+//         \DB::commit();
 
-    } catch (\Exception $e) {
+//         \Log::info('UPDATE BERHASIL');
 
-        \DB::rollBack();
+//         return response()->json([
+//             'status' => 'success'
+//         ]);
 
-        \Log::error('MIDTRANS CALLBACK ERROR', [
-            'message' => $e->getMessage(),
-            'line' => $e->getLine(),
-            'file' => $e->getFile()
-        ]);
+//     } catch (\Exception $e) {
 
-        return response()->json([
-            'message' => 'internal error'
-        ], 500);
-    }
-}
+//         \DB::rollBack();
+
+//         \Log::error('MIDTRANS CALLBACK ERROR', [
+//             'message' => $e->getMessage(),
+//             'line' => $e->getLine(),
+//             'file' => $e->getFile()
+//         ]);
+
+//         return response()->json([
+//             'message' => 'internal error'
+//         ], 500);
+//     }
+// }
 }

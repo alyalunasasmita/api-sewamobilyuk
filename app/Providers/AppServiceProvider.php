@@ -24,7 +24,7 @@ class AppServiceProvider extends ServiceProvider
     {
         RateLimiter::for('login', function (Request $request) {
             return Limit::perMinute(3)
-                ->by($request->ip(), '|' , strlower($request->email))
+                ->by($request->ip(), '|' , strtolower($request->email))
                 ->response(function () {
                     return response()->json([
                         'status' => 'error',
@@ -46,7 +46,7 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('password', function (Request $request) {
             return Limit::perMinute(3)
-                ->by($request->ip() ,'|',strlower($request->email)) 
+                ->by($request->ip() ,'|',strtolower($request->email)) 
                 ->response(function () {
                     return response()->json([
                         'status' => 'error',
@@ -57,7 +57,7 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('otp-verify', function (Request $request) {
             return Limit::perMinute(3)
-                ->by($request->ip() ,'|',strlower($request->email)) 
+                ->by($request->ip() ,'|',strtolower($request->email)) 
                 ->response(function () {
                     return response()->json([
                         'status' => 'error',
@@ -68,7 +68,7 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('showcar', function (Request $request) {
             return Limit::perMinute(60)
-                ->by($request->ip() ,'|',strlower($request->email)) 
+                ->by($request->ip() ,'|',strtolower($request->email)) 
                 ->response(function () {
                     return response()->json([
                         'status' => 'error',

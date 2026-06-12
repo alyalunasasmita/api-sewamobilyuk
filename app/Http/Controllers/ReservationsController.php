@@ -7,6 +7,7 @@ use Illuminate\Support\Str;
 use App\Models\Reservation;
 use Illuminate\Http\Request;
 use App\Models\User; 
+use App\Models\Notification; 
 use App\Models\DataCar;
 use App\Models\Payment;
 use App\Services\MidtransService;
@@ -130,6 +131,12 @@ class ReservationsController extends Controller
                     'tax_amount' => $tax
                 ]);
 
+                $notif = Notification::create([
+                    'user_id' => $user->id,
+                    'title' => 'Reservasi Berhasil',
+                    'message' => 'Reservasi berhasil dibuat dan silahkan bayar cash pada saat pengambilan mobil rental.'
+                ]);
+
                 DB::commit();
 
                 return response()->json([
@@ -177,6 +184,12 @@ class ReservationsController extends Controller
                 'tax_amount' => $tax, 
                 'expired_at' => now()->addMinutes(10)
             ]);
+
+            $notif = Notification::create([
+                    'user_id' => $user->id,
+                    'title' => 'Reservasi Berhasil',
+                    'message' => 'Reservasi berhasil dibuat dan menunggu pembayaran.'
+                ]);
 
             DB::commit();
 
