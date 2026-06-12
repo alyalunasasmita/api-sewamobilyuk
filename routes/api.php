@@ -19,20 +19,20 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 //auth
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']); 
-Route::post('/forget-password', [AuthController::class, 'forgetPassword']);
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login'); 
+Route::post('/forget-password', [AuthController::class, 'forgetPassword'])->middleware('throttle:password');
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 
 //utility 
-Route::post('/verify-otp-forget-password', [OtpController::class, 'verify_otp_forget_password']);
-Route::post('/verify-otp-account', [OtpController::class, 'verify_otp_account']);
+Route::post('/verify-otp-forget-password', [OtpController::class, 'verify_otp_forget_password'])->middleware('throttle:otp-verify');
+Route::post('/verify-otp-account', [OtpController::class, 'verify_otp_account'])->middleware('throttle:otp-verify');
 
 
 //show car 
-Route::get('/show/{id}', [DataCarController::class, 'show']);
-Route::middleware('throttle:60,1')->get('/show', [DataCarController::class, 'index']);
+Route::get('/show/{id}', [DataCarController::class, 'show'])->middleware('throttle:showcar');
+Route::get('/show', [DataCarController::class, 'index'])->middleware('throttle:showcar');
 
 
 //admin
@@ -70,7 +70,7 @@ Route::middleware(['role:customer'])->group(function(){
     //reservasi 
     Route::post('/add-reservation', [ReservationsController::class, 'store']);
     Route::get('/history-reservation', [ReservationsController::class, 'index']);
-    Route::get('/detail-reservation/{$reservations}', [ReservationsController::class, 'show']);
+    Route::get('/detail-reservation/{reservations}', [ReservationsController::class, 'show']);
     Route::patch('/cancel-reserv/{id}', [ReservationsController::class, 'cancel']);
 
     //pembayaran 
