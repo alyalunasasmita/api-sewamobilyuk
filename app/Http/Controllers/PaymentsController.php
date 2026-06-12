@@ -206,5 +206,5 @@ class PaymentsController extends Controller
 //             'message' => 'internal error'
 //         ], 500);
 //     }
-// }
+}
 }
