@@ -17,174 +17,179 @@ class PaymentsController extends Controller
 {
     public function callback(Request $request)
 {
-    \Log::info('==============================');
-    \Log::info('MASUK CONTROLLER CALLBACK');
+    \Log::info('MIDTRANS CALLBACK', $request->all());
 
-    \Log::info('RAW BODY', [
-        'content' => $request->getContent()
-    ]);
+return response()->json([
+    'status' => 'ok'
+], 200);
+    // \Log::info('==============================');
+    // \Log::info('MASUK CONTROLLER CALLBACK');
 
-    \Log::info('REQUEST ALL', $request->all());
+    // \Log::info('RAW BODY', [
+    //     'content' => $request->getContent()
+    // ]);
 
-    $serverKey = env('MIDTRANS_SERVER_KEY');
+    // \Log::info('REQUEST ALL', $request->all());
 
-    \Log::info('SEBELUM SIGNATURE');
+    // $serverKey = env('MIDTRANS_SERVER_KEY');
 
-    $signatureKey = hash(
-        'sha512',
-        $request->order_id .
-        $request->status_code .
-        $request->gross_amount .
-        $serverKey
-    );
+    // \Log::info('SEBELUM SIGNATURE');
 
-    \Log::info('SETELAH SIGNATURE', [
-        'order_id' => $request->order_id,
-        'transaction_status' => $request->transaction_status,
-        'signature_request' => $request->signature_key,
-        'signature_generated' => $signatureKey,
-    ]);
+    // $signatureKey = hash(
+    //     'sha512',
+    //     $request->order_id .
+    //     $request->status_code .
+    //     $request->gross_amount .
+    //     $serverKey
+    // );
 
-    if ($signatureKey !== $request->signature_key) {
+    // \Log::info('SETELAH SIGNATURE', [
+    //     'order_id' => $request->order_id,
+    //     'transaction_status' => $request->transaction_status,
+    //     'signature_request' => $request->signature_key,
+    //     'signature_generated' => $signatureKey,
+    // ]);
 
-        \Log::warning('INVALID MIDTRANS SIGNATURE', [
-            'order_id' => $request->order_id,
-            'transaction_status' => $request->transaction_status
-        ]);
+    // if ($signatureKey !== $request->signature_key) {
 
-        return response()->json([
-            'message' => 'invalid signature'
-        ], 403);
-    }
+    //     \Log::warning('INVALID MIDTRANS SIGNATURE', [
+    //         'order_id' => $request->order_id,
+    //         'transaction_status' => $request->transaction_status
+    //     ]);
 
-    \Log::info('SIGNATURE VALID');
+    //     return response()->json([
+    //         'message' => 'invalid signature'
+    //     ], 403);
+    // }
 
-    $payment = Payment::with('reservation')
-        ->where('order_id', $request->order_id)
-        ->first();
+    // \Log::info('SIGNATURE VALID');
 
-    \Log::info('HASIL PAYMENT', [
-        'found' => $payment ? true : false,
-        'order_id' => $request->order_id
-    ]);
+    // $payment = Payment::with('reservation')
+    //     ->where('order_id', $request->order_id)
+    //     ->first();
 
-    if (!$payment) {
+    // \Log::info('HASIL PAYMENT', [
+    //     'found' => $payment ? true : false,
+    //     'order_id' => $request->order_id
+    // ]);
 
-        \Log::warning('PAYMENT NOT FOUND', [
-            'order_id' => $request->order_id
-        ]);
+    // if (!$payment) {
 
-        return response()->json([
-            'message' => 'payment tidak ditemukan'
-        ], 404);
-    }
+    //     \Log::warning('PAYMENT NOT FOUND', [
+    //         'order_id' => $request->order_id
+    //     ]);
 
-    \Log::info('PAYMENT DITEMUKAN');
+    //     return response()->json([
+    //         'message' => 'payment tidak ditemukan'
+    //     ], 404);
+    // }
 
-    try {
+    // \Log::info('PAYMENT DITEMUKAN');
 
-        \DB::beginTransaction();
+    // try {
 
-        $transactionStatus = $request->transaction_status;
+    //     \DB::beginTransaction();
 
-        \Log::info('STATUS TRANSAKSI', [
-            'status' => $transactionStatus
-        ]);
+    //     $transactionStatus = $request->transaction_status;
 
-        switch ($transactionStatus) {
+    //     \Log::info('STATUS TRANSAKSI', [
+    //         'status' => $transactionStatus
+    //     ]);
 
-            case 'settlement':
+    //     switch ($transactionStatus) {
 
-                \Log::info('MASUK SETTLEMENT');
+    //         case 'settlement':
 
-                $payment->update([
-                    'status' => 'paid',
-                    'paid_at' => now(),
-                    'transaction_status' => $transactionStatus,
-                    'payment_type' => $request->payment_type
-                ]);
+    //             \Log::info('MASUK SETTLEMENT');
 
-                break;
+    //             $payment->update([
+    //                 'status' => 'paid',
+    //                 'paid_at' => now(),
+    //                 'transaction_status' => $transactionStatus,
+    //                 'payment_type' => $request->payment_type
+    //             ]);
 
-            case 'expire':
+    //             break;
 
-                \Log::info('MASUK EXPIRE');
+    //         case 'expire':
 
-                $payment->update([
-                    'status' => 'expired',
-                    'transaction_status' => $transactionStatus
-                ]);
+    //             \Log::info('MASUK EXPIRE');
 
-                if ($payment->reservation) {
-                    $payment->reservation->update([
-                        'reservations_status' => 'cancelled', 
-                        'expired_at' => now()
-                    ]);
-                }
+    //             $payment->update([
+    //                 'status' => 'expired',
+    //                 'transaction_status' => $transactionStatus
+    //             ]);
 
-                break;
+    //             if ($payment->reservation) {
+    //                 $payment->reservation->update([
+    //                     'reservations_status' => 'cancelled', 
+    //                     'expired_at' => now()
+    //                 ]);
+    //             }
 
-            case 'cancel':
+    //             break;
 
-                \Log::info('MASUK CANCEL');
+    //         case 'cancel':
 
-                $payment->update([
-                    'status' => 'failed',
-                    'transaction_status' => $transactionStatus
-                ]);
+    //             \Log::info('MASUK CANCEL');
 
-                break;
+    //             $payment->update([
+    //                 'status' => 'failed',
+    //                 'transaction_status' => $transactionStatus
+    //             ]);
 
-            case 'deny':
+    //             break;
 
-                \Log::info('MASUK DENY');
+    //         case 'deny':
 
-                $payment->update([
-                    'status' => 'failed',
-                    'transaction_status' => $transactionStatus
-                ]);
+    //             \Log::info('MASUK DENY');
 
-                break;
+    //             $payment->update([
+    //                 'status' => 'failed',
+    //                 'transaction_status' => $transactionStatus
+    //             ]);
 
-            case 'pending':
+    //             break;
 
-                \Log::info('MASUK PENDING');
+    //         case 'pending':
 
-                $payment->update([
-                    'status' => 'pending',
-                    'transaction_status' => $transactionStatus
-                ]);
+    //             \Log::info('MASUK PENDING');
 
-                break;
+    //             $payment->update([
+    //                 'status' => 'pending',
+    //                 'transaction_status' => $transactionStatus
+    //             ]);
 
-            default:
+    //             break;
 
-                \Log::warning('STATUS TIDAK DIKENAL', [
-                    'status' => $transactionStatus
-                ]);
-        }
+    //         default:
 
-        \DB::commit();
+    //             \Log::warning('STATUS TIDAK DIKENAL', [
+    //                 'status' => $transactionStatus
+    //             ]);
+    //     }
 
-        \Log::info('UPDATE BERHASIL');
+    //     \DB::commit();
 
-        return response()->json([
-            'status' => 'success'
-        ]);
+    //     \Log::info('UPDATE BERHASIL');
 
-    } catch (\Exception $e) {
+    //     return response()->json([
+    //         'status' => 'success'
+    //     ]);
 
-        \DB::rollBack();
+    // } catch (\Exception $e) {
 
-        \Log::error('MIDTRANS CALLBACK ERROR', [
-            'message' => $e->getMessage(),
-            'line' => $e->getLine(),
-            'file' => $e->getFile()
-        ]);
+    //     \DB::rollBack();
 
-        return response()->json([
-            'message' => 'internal error'
-        ], 500);
-    }
+    //     \Log::error('MIDTRANS CALLBACK ERROR', [
+    //         'message' => $e->getMessage(),
+    //         'line' => $e->getLine(),
+    //         'file' => $e->getFile()
+    //     ]);
+
+    //     return response()->json([
+    //         'message' => 'internal error'
+    //     ], 500);
+    // }
 }
 }
