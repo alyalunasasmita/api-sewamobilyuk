@@ -51,13 +51,13 @@ class ReservationsController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, MidtransService $midtransService)
     {
         $request->validate([
             'data_car_id' => 'required|exists:data_cars,id',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
-            'payment_method' => 'required|in:cash,midtrans'
+            'payment_method' => 'required|in:cash,QRIS,BCA_VA,BNI_VA,BRI_VA'
         ]);
 
         $user = $request->attributes->get('user');
@@ -149,40 +149,66 @@ class ReservationsController extends Controller
                 ], 201);
             }
 
-            /**
-             * MIDTRANS
-             */
-            MidtransService::init();
 
             $orderId = 'ORDER-' . Str::uuid();
+            $paymentResponse = null;
+            $paymentData = null;
 
-            $params = [
-                'transaction_details' => [
-                    'order_id' => $orderId,
-                    'gross_amount' => $amount,
-                ],
-                'customer_details' => [
-                    'first_name' => $user->name,
-                    'email' => $user->email,
-                ],
-                'expiry' => [
-                    'unit' => 'minutes',
-                    'duration' => 10
-                ]
-            ];
+            //qris
+            if ($request->payment_method === 'QRIS' || $request->payment_method === 'GOPAY'
+            ) {
+                $paymentResponse = $midtransService
+                    ->createQris(
+                        $orderId,
+                        $amount
+                    );
+                foreach ($paymentResponse->actions as $action) {
+                    if ($action->name === 'generate-qr-code') {
+                        $paymentData = [
+                            'type' => 'QRIS',
+                            'qr_url' => $action->url
+                        ];
+                        break;
+                    }
+                }
+            }
 
-            $snapResponse = Snap::createTransaction($params);
+            //VA Bank 
+            if (in_array($request->payment_method, [
+                'BCA_VA', 'BNI_VA','BRI_VA'
+                ])) {
+                $bank = match ($request->payment_method) {
+                    'BCA_VA' => 'bca',
+                    'BNI_VA' => 'bni',
+                    'BRI_VA' => 'bri',
+                };
+                $paymentResponse = $midtransService
+                    ->createVa(
+                        $orderId,
+                        $amount,
+                        $bank
+                    );
+                $paymentData = [
+                    'type' => $request->payment_method,
+                    'va_number' => $paymentResponse
+                        ->va_numbers[0]
+                        ->va_number
+                ];
+            }
+            
+                        
 
             $payment = Payment::create([
                 'user_id' => $user->id,
                 'reservation_id' => $reservation->id,
                 'order_id' => $orderId,
-                'snap_token' => $snapResponse->token,
                 'amount' => $amount,
-                'payment_method' => 'midtrans',
+                'payment_method' => $request->payment_method,
                 'status' => 'pending',
-                'tax_amount' => $tax, 
-                'expired_at' => now()->addMinutes(10)
+                'tax_amount' => $tax,
+                'expired_at' => now()->addMinutes(10),
+                'provider_ref' => $paymentResponse->transaction_id,
+                'payload' => json_encode($paymentResponse)
             ]);
 
             $notif = Notification::create([
@@ -198,10 +224,9 @@ class ReservationsController extends Controller
                 'message' => 'Reservasi berhasil dibuat',
                 'reservation' => $reservation,
                 'payment' => $payment,
-                'snap_token' => $snapResponse->token,
-                'redirect_url' => $snapResponse->redirect_url,
-                'pajak' => $tax, 
-                'subtotal' => $total_price
+                'payment_data' => $paymentData,
+                'subtotal' => $total_price,
+                'pajak' => $tax
             ], 201);
 
         } catch (\Exception $e) {
