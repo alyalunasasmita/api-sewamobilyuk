@@ -20,7 +20,8 @@ return new class extends Migration
         'rejected', 
         'confirmed',
         'waiting_payment',
-        'waiting_confirmation'
+        'waiting_confirmation',
+        'failed'
         )
         NOT NULL DEFAULT 'waiting_payment'
         ");
