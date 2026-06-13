@@ -18,7 +18,8 @@ return new class extends Migration
                 'on-going',
                 'completed',
                 'cancelled',
-                'rejected'
+                'rejected',
+                'failed'
             )
             NOT NULL DEFAULT 'waiting_payment'
         ");
