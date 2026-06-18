@@ -57,7 +57,7 @@ class ReservationsController extends Controller
             'data_car_id' => 'required|exists:data_cars,id',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
-            'payment_method' => 'required|in:cash,QRIS,BCA_VA,BNI_VA,BRI_VA'
+            'payment_method' => 'required|in:cash,QRIS,GOPAY,BSI_VA,BNI_VA,CIMB_VA'
         ]);
 
         $user = $request->attributes->get('user');
@@ -149,11 +149,9 @@ class ReservationsController extends Controller
                 ], 201);
             }
 
-
             $orderId = 'ORDER-' . Str::uuid();
             $paymentResponse = null;
             $paymentData = null;
-
             //qris
             if ($request->payment_method === 'QRIS' || $request->payment_method === 'GOPAY'
             ) {
@@ -172,10 +170,9 @@ class ReservationsController extends Controller
                     }
                 }
             }
-
             //VA Bank 
             if (in_array($request->payment_method, [
-                'BCA_VA', 'BNI_VA','BRI_VA'
+                'BSI_VA', 'BNI_VA','CIMB_VA'
                 ])) {
                 $bank = match ($request->payment_method) {
                     'BCA_VA' => 'bca',
@@ -196,8 +193,6 @@ class ReservationsController extends Controller
                 ];
             }
             
-                        
-
             $payment = Payment::create([
                 'user_id' => $user->id,
                 'reservation_id' => $reservation->id,

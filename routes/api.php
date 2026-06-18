@@ -74,8 +74,6 @@ Route::middleware(['role:customer'])->group(function(){
     Route::get('/detail-reservation/{reservations}', [ReservationsController::class, 'show']);
     Route::patch('/cancel-reserv/{id}', [ReservationsController::class, 'cancel']);
 
-    //pembayaran 
-    // Route::post('/payment', [PaymentsController::class, 'store']); 
 
     //notification
     Route::get('/notifications', [NotificationsController::class, 'index']);
