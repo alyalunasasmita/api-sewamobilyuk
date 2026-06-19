@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('address');
             $table->decimal('latitude', 10, 7);
             $table->decimal('longitude', 10, 7);
-            $table->integer('service_radius')->default(50); // km
+            $table->integer('service_radius')->default(50); 
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

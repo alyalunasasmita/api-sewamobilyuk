@@ -12,6 +12,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TrackerController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\NotificationsController;
+use App\Http\Controllers\BranchController;
 
 use App\Http\Controllers\ProfileUser;
 
@@ -80,6 +81,8 @@ Route::middleware(['role:customer'])->group(function(){
     Route::get('/notifications/unread-count', [NotificationsController::class, 'unreadCount']);
     Route::patch('/notifications/{id}/read', [NotificationsController::class, 'read']);
 
+    //cabang 
+    Route::get('/branch', [BranchController::class, 'index']);
 
 
 });

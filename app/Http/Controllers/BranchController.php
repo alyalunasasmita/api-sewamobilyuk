@@ -10,9 +10,12 @@ class BranchController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $cabang = Branch::all(); 
+        return response()->json([
+            'data' => $cabang
+        ]);
     }
 
     /**
