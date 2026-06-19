@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Storage;
+
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Notification;
