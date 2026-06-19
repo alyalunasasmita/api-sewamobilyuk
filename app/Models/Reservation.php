@@ -20,7 +20,10 @@ class Reservation extends Model
         'cancelled_at', 
         'no_reservasi',
         'reason_rejected',
-        'expired_at'
+        'expired_at', 
+        'returned_at',
+        'late_days',
+        'penalty_amount'
     ];
 
     public function user()

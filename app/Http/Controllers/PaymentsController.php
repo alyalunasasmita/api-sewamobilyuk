@@ -38,7 +38,7 @@ class PaymentsController extends Controller
 
     $payment->update([
         'proof_payment' => $image,
-        'status' => 'pending_approval'
+        'status' => 'paid'
     ]);
 
 

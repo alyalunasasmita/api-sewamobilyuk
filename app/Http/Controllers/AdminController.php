@@ -198,12 +198,8 @@ class AdminController extends Controller
         ]);
     }
 
-    public function reservationCompleted(Request $request, $id)
+    public function reservationCompleted($id)
     {
-        $request->validate([
-            'returned_at' => 'required|date'
-        ]);
-
         $reservation = Reservation::with('car')->find($id);
 
         if (!$reservation) {
@@ -214,7 +210,7 @@ class AdminController extends Controller
         }
 
         $endDate = Carbon::parse($reservation->end_date);
-        $returnedAt = Carbon::parse($request->returned_at);
+        $returnedAt = Carbon::parse(now());
 
         $lateDays = 0;
         $penaltyAmount = 0;
