@@ -36,6 +36,11 @@ class PaymentsController extends Controller
         'bukti_pembayaran'
     );
 
+    dd([
+    'image' => $image,
+    'disk' => Storage::disk('public')->path($image)
+]);
+
     $payment->update([
         'proof_payment' => $image,
         'status' => 'paid'
