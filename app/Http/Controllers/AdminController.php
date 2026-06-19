@@ -9,6 +9,7 @@ use App\Models\Notification;
 use App\Models\User;
 use App\Services\RefundService;
 use App\Services\MidtransService;
+use Carbon\Carbon;
 
 
 class AdminController extends Controller
@@ -317,9 +318,6 @@ class AdminController extends Controller
             'reservations_status' => 'on-going'
         ]);
 
-        $reservation->car->update([
-            'availability_status' => 'on-rent'
-        ]);
 
         Notification::create([
             'user_id' => $reservation->user_id,

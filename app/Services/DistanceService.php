@@ -4,9 +4,14 @@ namespace App\Services;
 
 class DistanceService
 {
-    public function calculate(float $lat1,float $lon1,float $lat2,float $lon2): float {
+    public function calculate(
+        float $lat1,
+        float $lon1,
+        float $lat2,
+        float $lon2
+    ): float {
 
-        $earthRadius = 6371;
+        $earthRadius = 6371; // KM
 
         $dLat = deg2rad($lat2 - $lat1);
         $dLon = deg2rad($lon2 - $lon1);
@@ -18,16 +23,11 @@ class DistanceService
             sin($dLon / 2) *
             sin($dLon / 2);
 
-        $c = 2 * atan2(
-            sqrt($a),
-            sqrt(1 - $a)
-        );
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
 
-        return round(
-            $earthRadius * $c,
-            2
-        );
+        return $earthRadius * $c;
     }
+
 
     public function getDeliveryFee(float $distance): int {
 
@@ -48,4 +48,6 @@ class DistanceService
     public function calculateMeter(float $lat1,float $lon1,float $lat2,float $lon2): float {
         return $this->calculate($lat1,$lon1,$lat2,$lon2) * 1000;
     }
+
+      
 }

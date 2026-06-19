@@ -10,7 +10,9 @@ use App\Models\User;
 use App\Models\Notification; 
 use App\Models\DataCar;
 use App\Models\Payment;
+use App\Models\Branch;
 use App\Services\MidtransService;
+use App\Services\DistanceService;
 use Carbon\Carbon;
 use Midtrans\Config;
 use Midtrans\Snap;
@@ -51,13 +53,15 @@ class ReservationsController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request, MidtransService $midtransService)
+    public function store(Request $request, MidtransService $midtransService, DistanceService $distanceService)
     {
         $request->validate([
             'data_car_id' => 'required|exists:data_cars,id',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
-            'payment_method' => 'required|in:cash,QRIS,GOPAY,BSI_VA,BNI_VA,CIMB_VA'
+            'payment_method' => 'required|in:cash,QRIS,GOPAY,BSI_VA,BNI_VA,CIMB_VA', 
+            'latitude' => 'required|numeric', 
+            'longitude' => 'required|numeric'
         ]);
 
         $user = $request->attributes->get('user');
@@ -65,6 +69,37 @@ class ReservationsController extends Controller
         try {
 
             DB::beginTransaction();
+
+            //validasi jarak
+            
+            $branches = Branch::where('is_active', true)->get();
+            $nearestBranch = null;
+            $nearestDistance = PHP_FLOAT_MAX;
+            foreach ($branches as $branch) {
+
+                $distance = $distanceService->calculate(
+                    $request->latitude,
+                    $request->longitude,
+                    $branch->latitude,
+                    $branch->longitude
+                );
+
+                if ($distance < $nearestDistance) {
+                    $nearestDistance = $distance;
+                    $nearestBranch = $branch;
+                }
+            }
+
+            if (!$nearestBranch) {
+                throw new \Exception('Cabang tidak ditemukan');
+            }
+
+            if ($nearestDistance > 20) {
+                throw new \Exception(
+                    'Maaf, layanan belum tersedia di lokasi Anda'
+                );
+            }
+             
 
             $car = Datacar::where('id', $request->data_car_id)
                 ->where('availability_status', 'available')
