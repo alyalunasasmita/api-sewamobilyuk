@@ -14,7 +14,7 @@ class ImageServices{
         }
         $manager = new ImageManager(new Driver()); 
         $filename = Str::random(20) . '.jpg';
-        $img = $manager->read($imageFile)->resize(width: 800)->toJpeg(70);
+       $img = $manager->read($imageFile)->scaleDown(width: 800)->toJpeg(70);
         Storage::disk('public')->put($folder . '/' . $filename, (string) $img);
         return $folder . '/' . $filename;
     }

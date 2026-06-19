@@ -43,6 +43,7 @@ class AuthController extends Controller
             'otp' => $otp
         ];
         Mail::to($user->email)->send(new SendEmail($data, 'verifikasi Email')); 
+
         return response()->json([
             'status' => 'success',
             'message' => 'register berhasil', 

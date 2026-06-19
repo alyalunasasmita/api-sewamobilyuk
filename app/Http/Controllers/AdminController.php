@@ -16,45 +16,50 @@ class AdminController extends Controller
 {
     public function ApproveRefund($id)
     {
-        MidtransService::init();
-        $reservation = Reservation::with([
-            'payment',
-            'car'
-        ])->find($id);
+        $reservation = Reservation::with('payment')
+            ->find($id);
 
         if (!$reservation) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'reservasi tidak ditemukan'
-            ]);
+                'message' => 'Reservasi tidak ditemukan'
+            ], 404);
         }
 
         $payment = $reservation->payment;
 
-        if (!$payment || $payment->status != 'paid') {
+        if (!$payment) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'payment tidak valid'
-            ]);
+                'message' => 'Data pembayaran tidak ditemukan'
+            ], 404);
         }
-        try {
-            $result = RefundService::process($payment);
-            Notification::create([
-                'user_id' => $reservation->user_id,
-                'title' => 'Refund Disetujui',
-                'message' => 'dana pembayaran Anda dengan nomor ' . $reservation->payment->order_id . ' telah dikembalikan .'
-            ]);
-            return response()->json([
-                'status' => 'success',
-                'message' => 'refund berhasil',
-                'data' => $result
-            ]);
-        } catch (\Exception $e) {
+
+        if ($payment->status !== 'paid') {
             return response()->json([
                 'status' => 'error',
-                'message' => $e->getMessage()
-            ], 500);
+                'message' => 'Pembayaran belum lunas'
+            ], 400);
         }
+
+        $payment->update([
+            'status' => 'refunded'
+        ]);
+
+        $reservation->update([
+            'refund_status' => 'approved'
+        ]);
+
+        Notification::create([
+            'user_id' => $reservation->user_id,
+            'title' => 'Refund Disetujui',
+            'message' => 'Pengajuan refund Anda telah disetujui. Dana akan dikembalikan oleh admin.'
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Refund berhasil disetujui'
+        ]);
     }
 
     public function ApproveReserv($id)
@@ -142,13 +147,16 @@ class AdminController extends Controller
                 'availability_status' => 'available'
             ]);
 
-            MidtransService::init();
-            $refundResult = RefundService::process($payment);
+            Notification::create([
+                'user_id' => $reservation->user_id,
+                'title' => 'Reservasi Selesai',
+                'message' => 'Reservasi Anda dengan nomor ' . $reservation->no_reservasi . ' telah ditolak dengan alasan ' . $request->reason . ', admin akan segera mengembalikan dana kamu.'
+            ]);
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'reservasi ditolak dan refund berhasil',
-                'refund' => $refundResult
+                'message' => 'reservasi ditolak',
+    
             ]);
 
         } catch (\Exception $e) {
@@ -283,7 +291,7 @@ class AdminController extends Controller
         Notification::create([
             'user_id' => $payment->reservation->user_id,
             'title' => 'Pembayaran Cash berhasil',
-            'message' => 'Pembauaran Anda dengan nomor ' . $payment->order_id . ' sudah dibayar dengan metode Cash.'
+            'message' => 'pembayaran Anda dengan nomor ' . $payment->order_id . ' sudah dibayar dengan metode Cash.'
         ]);
 
         return response()->json([
