@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Payment extends Model
 {
+    protected $appends = ['proof_url'];
     protected $fillable = [
         'user_id', 
         'reservation_id',
@@ -23,7 +24,15 @@ class Payment extends Model
         'proof_payment'
     ];
 
+    public function getProofUrlAttribute()
+    {
+        return $this->proof_payment
+            ? asset('storage/' . $this->proof_payment)
+            : null;
+    }
+
     function reservation(){
         return $this->belongsTo(Reservation::class, 'reservation_id');
     }
+
 }
