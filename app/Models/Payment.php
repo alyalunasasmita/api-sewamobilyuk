@@ -13,13 +13,14 @@ class Payment extends Model
         'external_id',
         'snap_token',
         'invoice_id',
-        'amount', //total pembayaran keseluruhan (+ pajak)
+        'amount', 
         'status', 
         'payment_type',
         'payment_method',
         'expired_at', 
         'paid_at', 
-        'tax_amount'
+        'tax_amount',
+        'proof_payment'
     ];
 
     function reservation(){

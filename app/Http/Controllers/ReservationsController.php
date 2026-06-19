@@ -53,13 +53,13 @@ class ReservationsController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request, MidtransService $midtransService, DistanceService $distanceService)
+    public function store(Request $request, DistanceService $distanceService)
     {
         $request->validate([
             'data_car_id' => 'required|exists:data_cars,id',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
-            'payment_method' => 'required|in:cash,QRIS,GOPAY,BSI_VA,BNI_VA,CIMB_VA', 
+            'payment_method' => 'required|in:cash,transfer', 
             'latitude' => 'required|numeric', 
             'longitude' => 'required|numeric'
         ]);
@@ -137,6 +137,7 @@ class ReservationsController extends Controller
 
             $reservation = Reservation::create([
                 'user_id' => $user->id,
+                'branch_id' => $nearestBranch,
                 'data_car_id' => $request->data_car_id,
                 'start_date' => $start,
                 'end_date' => $end,
@@ -155,97 +156,26 @@ class ReservationsController extends Controller
             $tax = $total_price * 0.10;
             $amount = round($total_price + $tax);
 
-            if ($request->payment_method === 'cash') {
+            $paymentStatus = $request->payment_method === 'cash' ? 'pending' : 'waiting_upload';
 
-                $payment = Payment::create([
-                    'user_id' => $user->id,
-                    'reservation_id' => $reservation->id,
-                    'amount' => $amount,
-                    'payment_method' => 'cash',
-                    'status' => 'pending',
-                    'tax_amount' => $tax
-                ]);
-
-                $notif = Notification::create([
-                    'user_id' => $user->id,
-                    'title' => 'Reservasi Berhasil',
-                    'message' => 'Reservasi berhasil dibuat dan silahkan bayar cash pada saat pengambilan mobil rental.'
-                ]);
-
-                DB::commit();
-
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Reservasi berhasil dibuat',
-                    'reservation' => $reservation,
-                    'payment' => $payment, 
-                    'subtotal' => $total_price, 
-                    'pajak' => $tax
-                ], 201);
-            }
-
-            $orderId = 'ORDER-' . Str::uuid();
-            $paymentResponse = null;
-            $paymentData = null;
-            //qris
-            if ($request->payment_method === 'QRIS' || $request->payment_method === 'GOPAY'
-            ) {
-                $paymentResponse = $midtransService
-                    ->createQris(
-                        $orderId,
-                        $amount
-                    );
-                foreach ($paymentResponse->actions as $action) {
-                    if ($action->name === 'generate-qr-code') {
-                        $paymentData = [
-                            'type' => 'QRIS',
-                            'qr_url' => $action->url
-                        ];
-                        break;
-                    }
-                }
-            }
-            //VA Bank 
-            if (in_array($request->payment_method, [
-                'BSI_VA', 'BNI_VA','CIMB_VA'
-                ])) {
-                $bank = match ($request->payment_method) {
-                    'BCA_VA' => 'bca',
-                    'BNI_VA' => 'bni',
-                    'BRI_VA' => 'bri',
-                };
-                $paymentResponse = $midtransService
-                    ->createVa(
-                        $orderId,
-                        $amount,
-                        $bank
-                    );
-                $paymentData = [
-                    'type' => $request->payment_method,
-                    'va_number' => $paymentResponse
-                        ->va_numbers[0]
-                        ->va_number
-                ];
-            }
-            
             $payment = Payment::create([
                 'user_id' => $user->id,
                 'reservation_id' => $reservation->id,
-                'order_id' => $orderId,
                 'amount' => $amount,
                 'payment_method' => $request->payment_method,
-                'status' => 'pending',
-                'tax_amount' => $tax,
-                'expired_at' => now()->addMinutes(10),
-                'provider_ref' => $paymentResponse->transaction_id,
-                'payload' => json_encode($paymentResponse)
+                'status' => $paymentStatus,
+                'tax_amount' => $tax
             ]);
 
-            $notif = Notification::create([
-                    'user_id' => $user->id,
-                    'title' => 'Reservasi Berhasil',
-                    'message' => 'Reservasi berhasil dibuat dan menunggu pembayaran.'
-                ]);
+            $message = $request->payment_method === 'cash'
+            ? 'Reservasi berhasil dibuat dan silahkan bayar cash pada saat pengambilan mobil rental.'
+            : 'Reservasi berhasil dibuat. Silakan upload bukti transfer untuk proses verifikasi admin.';
+
+            Notification::create([
+                'user_id' => $user->id,
+                'title' => 'Reservasi Berhasil',
+                'message' => $message
+            ]);
 
             DB::commit();
 
@@ -254,9 +184,9 @@ class ReservationsController extends Controller
                 'message' => 'Reservasi berhasil dibuat',
                 'reservation' => $reservation,
                 'payment' => $payment,
-                'payment_data' => $paymentData,
                 'subtotal' => $total_price,
-                'pajak' => $tax
+                'pajak' => $tax,
+                'amount' => $amount
             ], 201);
 
         } catch (\Exception $e) {

@@ -317,6 +317,10 @@ class AdminController extends Controller
         $reservation->update([
             'reservations_status' => 'on-going'
         ]);
+        
+        $reservation->car->update([
+            'availability_car' => 'on-rent'
+        ]);
 
 
         Notification::create([

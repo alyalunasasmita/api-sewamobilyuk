@@ -84,6 +84,8 @@ Route::middleware(['role:customer'])->group(function(){
     //cabang 
     Route::get('/branch', [BranchController::class, 'index']);
 
+    //upload bukti pembayaran 
+    Route::post('/upload_pembayaran/{payment}', [PaymentsController::class, 'upload_bukti']);
 
 });
 

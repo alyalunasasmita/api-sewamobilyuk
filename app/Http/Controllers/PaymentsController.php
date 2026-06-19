@@ -5,200 +5,57 @@ namespace App\Http\Controllers;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Notification;
-use App\Services\MidtransService;
+use App\Services\ImageServices;
 use Illuminate\Http\Request;
-use Midtrans\Transaction;
-use Carbon\Carbon;
 
-use Midtrans\Config;
-use Midtrans\Snap;
+use Carbon\Carbon;
 
 
 class PaymentsController extends Controller
 {
-    public function callback(Request $request)
-    {
-    
-        \Log::info('==============================');
-        \Log::info('MASUK CONTROLLER CALLBACK');
+    //upload bukti pembayaran 
+    public function upload_bukti(
+    Request $request,
+    ImageServices $imageServices,
+    Payment $payment
+) {
 
-        \Log::info('RAW BODY', [
-            'content' => $request->getContent()
-        ]);
+    $request->validate([
+        'proof_payment' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048'
+    ]);
 
-        \Log::info('REQUEST ALL', $request->all());
-
-        $serverKey = env('MIDTRANS_SERVER_KEY');
-
-        \Log::info('SEBELUM SIGNATURE');
-
-        $signatureKey = hash(
-            'sha512',
-            $request->order_id .
-            $request->status_code .
-            $request->gross_amount .
-            $serverKey
-        );
-
-        \Log::info('SETELAH SIGNATURE', [
-            'order_id' => $request->order_id,
-            'transaction_status' => $request->transaction_status,
-            'signature_request' => $request->signature_key,
-            'signature_generated' => $signatureKey,
-        ]);
-
-        if ($signatureKey !== $request->signature_key) {
-
-            \Log::warning('INVALID MIDTRANS SIGNATURE', [
-                'order_id' => $request->order_id,
-                'transaction_status' => $request->transaction_status
-            ]);
-
-            return response()->json([
-                'message' => 'invalid signature'
-            ], 403);
-        }
-
-        \Log::info('SIGNATURE VALID');
-
-        $payment = Payment::with('reservation')
-            ->where('order_id', $request->order_id)
-            ->first();
-
-        \Log::info('HASIL PAYMENT', [
-            'found' => $payment ? true : false,
-            'order_id' => $request->order_id
-        ]);
-
-        if (!$payment) {
-
-            \Log::warning('PAYMENT NOT FOUND', [
-                'order_id' => $request->order_id
-            ]);
-
-            return response()->json([
-                'message' => 'payment tidak ditemukan'
-            ], 404);
-        }
-
-        \Log::info('PAYMENT DITEMUKAN');
-
-        try {
-
-            \DB::beginTransaction();
-
-            $transactionStatus = $request->transaction_status;
-
-            \Log::info('STATUS TRANSAKSI', [
-                'status' => $transactionStatus
-            ]);
-
-            switch ($transactionStatus) {
-
-                case 'settlement':
-
-                    \Log::info('MASUK SETTLEMENT');
-
-                    $payment->update([
-                        'status' => 'paid',
-                        'paid_at' => now(),
-                        'transaction_status' => $transactionStatus,
-                        'payment_type' => $request->payment_type
-                    ]);
-
-                    Notification::create([
-                        'user_id' => $payment->user->id,
-                        'title' => 'Reservasi Berhasil',
-                        'message' => 'Pembayaran untuk ' . $payment->order_id  .' berhasil '
-                    ]);
-
-                    break;
-
-                case 'expire':
-
-                    \Log::info('MASUK EXPIRE');
-
-                    $payment->update([
-                        'status' => 'expired',
-                        'transaction_status' => $transactionStatus
-                    ]);
-
-                    if ($payment->reservation) {
-                        $payment->reservation->update([
-                            'reservations_status' => 'cancelled', 
-                            'expired_at' => now()
-                        ]);
-                    }
-
-                    Notification::create([
-                        'user_id' => $payment->user->id,
-                        'title' => 'Reservasi Berhasil',
-                        'message' => 'Pembayaran untuk ' . $payment->order_id  .' telah kadaluarsa, silahkan membuat reservasi kembali '
-                    ]);
-
-                    break;
-
-                case 'cancel':
-
-                    \Log::info('MASUK CANCEL');
-
-                    $payment->update([
-                        'status' => 'failed',
-                        'transaction_status' => $transactionStatus
-                    ]);
-
-                    break;
-
-                case 'deny':
-
-                    \Log::info('MASUK DENY');
-
-                    $payment->update([
-                        'status' => 'failed',
-                        'transaction_status' => $transactionStatus
-                    ]);
-
-                    break;
-
-                case 'pending':
-
-                    \Log::info('MASUK PENDING');
-
-                    $payment->update([
-                        'status' => 'pending',
-                        'transaction_status' => $transactionStatus
-                    ]);
-
-                    break;
-
-                default:
-
-                    \Log::warning('STATUS TIDAK DIKENAL', [
-                        'status' => $transactionStatus
-                    ]);
-            }
-
-            \DB::commit();
-
-            \Log::info('UPDATE BERHASIL');
-
-            return response()->json([
-                'status' => 'success'
-            ]);
-
-        } catch (\Exception $e) {
-
-            \DB::rollBack();
-
-            \Log::error('MIDTRANS CALLBACK ERROR', [
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile()
-            ]);
-
-            return response()->json([
-                'message' => 'internal error'
-            ], 500);
-        }
+    if ($payment->status !== 'waiting_upload') {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'pengiriman bukti transfer sudah dilakukan'
+        ], 400);
     }
+
+    $image = $imageServices->uploadAndResize(
+        $request->file('proof_payment'),
+        'bukti_pembayaran'
+    );
+
+    $payment->update([
+        'proof_payment' => $image,
+        'status' => 'pending_approval'
+    ]);
+
+
+    $payment->reservation->update([
+        'reservations_status' => 'waiting_confirmation'
+    ]);
+
+    Notification::create([
+        'user_id' => $payment->user_id,
+        'title' => 'Bukti Transfer Terkirim',
+        'message' => 'Bukti transfer berhasil dikirim dan sedang menunggu verifikasi admin.'
+    ]);
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Bukti transfer berhasil diupload',
+        'payment' => $payment->fresh()
+    ]);
+}
 }

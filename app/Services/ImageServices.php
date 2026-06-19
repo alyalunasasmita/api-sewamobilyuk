@@ -8,7 +8,7 @@ use Intervention\Image\Drivers\Gd\Driver;
 class ImageServices{
 
     public function uploadAndResize($imageFile, $folder = 'Datacar') {
-        $allowedFolders = ['Datacar', 'profile'];
+        $allowedFolders = ['Datacar', 'profile','bukti_pembayaran'];
         if(!in_array($folder, $allowedFolders)){
             throw new \Exception('Folder tidak diizinkan');
         }
