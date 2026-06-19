@@ -280,7 +280,7 @@ class AdminController extends Controller
         ]);
 
         $payment->reservation->update([
-            'reservations_status' => 'waiting_confirmation'
+            'reservations_status' => 'confirmed'
         ]);
 
         Notification::create([
