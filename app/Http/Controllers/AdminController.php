@@ -284,7 +284,7 @@ class AdminController extends Controller
         ]);
 
         Notification::create([
-            'user_id' => $reservation->user_id,
+            'user_id' => $payment->reservation->user_id,
             'title' => 'Pembayaran Cash berhasil',
             'message' => 'Pembauaran Anda dengan nomor ' . $reservation->payment->order_id . ' sudah dibayar dengan metode Cash.'
         ]);
