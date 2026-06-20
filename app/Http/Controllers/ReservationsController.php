@@ -277,10 +277,12 @@ class ReservationsController extends Controller
             ], 404);
         }
 
-        if ($reservation->reservations_status === 'cancelled') {
+        $allowedStatuses = ['waiting_confirmation', 'waiting_upload', 'pending_cash', 'confirmed'];
+
+        if (!in_array($reservation->reservations_status, $allowedStatuses)) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'reservasi sudah dibatalkan'
+                'message' => 'Reservasi tidak dapat dibatalkan karena sedang berjalan atau sudah diproses.'
             ], 400);
         }
 
@@ -294,21 +296,38 @@ class ReservationsController extends Controller
             ], 400);
         }
 
-        $reservation->update([
-            'reservations_status' => 'cancelled',
-            'refund_status' => 'pending',
-            'cancelled_at' => now()
-        ]);
+        try {
+            \DB::beginTransaction();
 
-        if ($reservation->car) {
+            $refundStatus = 'none';
+            if ($reservation->reservations_status === 'waiting_confirmation') {
+                $refundStatus = 'pending'; 
+            }
+
+            $reservation->update([
+                'reservations_status' => 'cancelled',
+                'refund_status' => $refundStatus,
+                'cancelled_at' => now()
+            ]);
+
             $reservation->car->update([
                 'availability_status' => 'available'
             ]);
-        }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'reservasi berhasil dibatalkan'
-        ]);
+            \DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'reservasi berhasil dibatalkan'
+            ]);
+
+        } catch (\Exception $e) {
+            \DB::rollBack();
+
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }
