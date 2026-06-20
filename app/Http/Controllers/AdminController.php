@@ -25,9 +25,7 @@ class AdminController extends Controller
                 'message' => 'Reservasi tidak ditemukan'
             ], 404);
         }
-
         $payment = $reservation->payment;
-
         if (!$payment) {
             return response()->json([
                 'status' => 'error',
@@ -174,9 +172,7 @@ class AdminController extends Controller
             'user',
             'car',
             'payment'
-        ])
-        ->latest()
-        ->get();
+        ])->whereNotIn('reservations_status', ['waiting_payment'])->latest()->get();
 
         return response()->json([
             'status' => 'success',
@@ -253,6 +249,7 @@ class AdminController extends Controller
             'penalty_amount' => $penaltyAmount
         ]);
     }
+
 
     public function confirmCashPayment($id)
     {

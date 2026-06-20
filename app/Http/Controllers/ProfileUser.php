@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Services\ImageServices;
+use Illuminate\Support\Facades\Hash;
 
 class ProfileUser extends Controller
 {
