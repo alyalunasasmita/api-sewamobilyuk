@@ -132,38 +132,53 @@ class AdminController extends Controller
             ], 404);
         }
 
-        if ($reservation->reservations_status != 'waiting_confirmation'){
+        $allowedStatuses = ['waiting_confirmation', 'pending_cash', 'confirmed'];
+
+        if (!in_array($reservation->reservations_status, $allowedStatuses)) {
             return response()->json([
                 'status' => 'error', 
-                'message' => 'user belum melakukan pembayaran'
+                'message' => 'Status reservasi tidak valid untuk ditolak.'
             ]);
         }
 
         try {
+            \DB::beginTransaction();
+            $refundStatus = 'none';
+            if ($reservation->reservations_status === 'waiting_confirmation') {
+                $refundStatus = 'refunded';
+            }
+
             $reservation->update([
                 'reason_rejected' => $request->reason,
-                'reservations_status' => 'rejected',
-                'refund_status' => 'refunded',
-                'rejected_at' => now()
+                'reservations_status' => 'rejected', 
+                'refund_status' => $refundStatus, 
+                'rejected_at' => now() 
             ]);
 
             $reservation->car->update([
                 'availability_status' => 'available'
             ]);
 
+            $notifMessage = 'Reservasi Anda dengan nomor ' . $reservation->no_reservasi . ' telah ditolak dengan alasan ' . $request->reason . '.';
+            if ($refundStatus === 'refunded') {
+                $notifMessage .= ' Admin segera mengembalikan dana kamu.';
+            }
+
             Notification::create([
                 'user_id' => $reservation->user_id,
                 'title' => 'Reservasi Selesai',
-                'message' => 'Reservasi Anda dengan nomor ' . $reservation->no_reservasi . ' telah ditolak dengan alasan ' . $request->reason . ', admin segera mengembalikan dana kamu.'
+                'message' => $notifMessage
             ]);
+
+            \DB::commit();
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'reservasi ditolak',
-    
+                'message' => 'reservasi berhasil ditolak',
             ]);
 
         } catch (\Exception $e) {
+            \DB::rollBack();
 
             return response()->json([
                 'status' => 'error',
@@ -171,6 +186,7 @@ class AdminController extends Controller
             ], 500);
         }
     }
+
 
     public function listReservasi()
     {
@@ -200,6 +216,7 @@ class AdminController extends Controller
         ]);
     }
 
+
     public function customerProfile(){
         $user = User::where('role','customer')->get(); 
         return response()->json([
@@ -207,6 +224,7 @@ class AdminController extends Controller
             'data' => $user
         ]);
     }
+
 
     public function reservationCompleted($id)
     {
@@ -286,9 +304,11 @@ class AdminController extends Controller
             'status' => 'paid',
             'paid_at' => now()
         ]);
-
         $payment->reservation->update([
             'reservations_status' => 'confirmed'
+        ]);
+        $payment->reservation->car->update([
+            'availability_status' => 'on rent'
         ]);
 
         Notification::create([
@@ -296,46 +316,36 @@ class AdminController extends Controller
             'title' => 'Pembayaran Cash berhasil',
             'message' => 'pembayaran Anda dengan nomor ' . $payment->order_id . ' sudah dibayar dengan metode Cash.'
         ]);
-
         return response()->json([
             'status' => 'success',
             'message' => 'pembayaran cash berhasil dikonfirmasi'
         ]);
     }
 
+
     public function startRental($id)
     {
         $reservation = Reservation::with('car')->find($id);
-
         if (!$reservation) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'reservasi tidak ditemukan'
             ], 404);
         }
-
         if ($reservation->reservations_status !== 'confirmed') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'reservasi belum dapat dimulai'
             ], 400);
         }
-
         $reservation->update([
             'reservations_status' => 'on-going'
         ]);
-        
-        $reservation->car->update([
-            'availability_car' => 'on-rent'
-        ]);
-
-
         Notification::create([
             'user_id' => $reservation->user_id,
             'title' => 'Rental dimulai',
             'message' => 'Reservasi Anda dengan nomor ' . $reservation->no_reservasi . ' telah dimulai.'
         ]);
-
         return response()->json([
             'status' => 'success',
             'message' => 'rental berhasil dimulai',

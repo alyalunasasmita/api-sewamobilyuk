@@ -109,6 +109,7 @@ class ReservationsController extends Controller
                 ], 422);
             }
              
+            //mencegah double booking
 
             $car = Datacar::where('id', $request->data_car_id)
                 ->where('availability_status', 'available')
@@ -132,6 +133,14 @@ class ReservationsController extends Controller
 
             if ($isBooked) {
                 throw new \Exception('Mobil sudah direservasi pada tanggal tersebut');
+            }
+
+            $hasActiveRental = Reservation::where('user_id', $user->id)->whereIn('reservations_status', ['confirmed', 'on going'])->exists(); 
+            if ($hasActiveRental && !$request->has('confirm_override')){
+                return response()->json([
+                    'status' => 'warning', 
+                    'message' => 'kamu masih punya rental yang aktif, yakin akan membuat rental baru?'
+                ], 200);
             }
 
             $start = Carbon::parse($request->start_date);
@@ -174,6 +183,10 @@ class ReservationsController extends Controller
                 'payment_method' => $request->payment_method,
                 'status' => $paymentStatus,
                 'tax_amount' => $tax
+            ]);
+
+            $reservation->car->update([
+                'availability_status' => 'booked'
             ]);
 
             $message = $request->payment_method === 'cash'

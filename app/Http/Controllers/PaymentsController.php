@@ -15,7 +15,6 @@ use Carbon\Carbon;
 
 class PaymentsController extends Controller
 {
-    //upload bukti pembayaran 
     public function upload_bukti(
     Request $request,
     ImageServices $imageServices,
@@ -57,7 +56,8 @@ class PaymentsController extends Controller
     return response()->json([
         'status' => 'success',
         'message' => 'Bukti transfer berhasil diupload',
-        'payment' => $payment->fresh()
+        'payment' => $payment->fresh(), 
+        
     ]);
 }
 }
