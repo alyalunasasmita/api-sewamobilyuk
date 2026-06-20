@@ -25,6 +25,14 @@ class AdminController extends Controller
                 'message' => 'Reservasi tidak ditemukan'
             ], 404);
         }
+
+        if($reservation->reservation_status != 'cancelled'){
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'user tidak melakukan pembatalan'
+            ]);
+        }
+
         $payment = $reservation->payment;
         if (!$payment) {
             return response()->json([
@@ -45,7 +53,7 @@ class AdminController extends Controller
         ]);
 
         $reservation->update([
-            'refund_status' => 'approved'
+            'refund_status' => 'refunded'
         ]);
 
         Notification::create([
@@ -124,21 +132,19 @@ class AdminController extends Controller
             ], 404);
         }
 
-        $payment = $reservation->payment;
-
-        if (!$payment || $payment->status != 'paid') {
+        if ($reservation->reservations_status != 'waiting_confirmation'){
             return response()->json([
-                'status' => 'error',
-                'message' => 'customer belum melakukan pembayaran'
-            ], 400);
+                'status' => 'error', 
+                'message' => 'user belum melakukan pembayaran'
+            ]);
         }
 
         try {
             $reservation->update([
                 'reason_rejected' => $request->reason,
-                'reservations_status' => 'cancelled',
-                'refund_status' => 'pending',
-                'cancelled_at' => now()
+                'reservations_status' => 'rejected',
+                'refund_status' => 'refunded',
+                'rejected_at' => now()
             ]);
 
             $reservation->car->update([
@@ -148,7 +154,7 @@ class AdminController extends Controller
             Notification::create([
                 'user_id' => $reservation->user_id,
                 'title' => 'Reservasi Selesai',
-                'message' => 'Reservasi Anda dengan nomor ' . $reservation->no_reservasi . ' telah ditolak dengan alasan ' . $request->reason . ', admin akan segera mengembalikan dana kamu.'
+                'message' => 'Reservasi Anda dengan nomor ' . $reservation->no_reservasi . ' telah ditolak dengan alasan ' . $request->reason . ', admin segera mengembalikan dana kamu.'
             ]);
 
             return response()->json([

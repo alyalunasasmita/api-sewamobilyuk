@@ -23,7 +23,8 @@ class Reservation extends Model
         'expired_at', 
         'returned_at',
         'late_days',
-        'penalty_amount'
+        'penalty_amount',
+        'rejected_at'
     ];
 
     public function user()
