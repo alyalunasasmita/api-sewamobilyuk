@@ -99,6 +99,15 @@ class ReservationsController extends Controller
                     'Maaf, layanan belum tersedia di lokasi Anda'
                 );
             }
+
+            //validasi data berkas yang dibutuhkan 
+        
+            if(blank($user->id_card) || blank($user->drive_licence)) {
+                return response()->json([
+                    "status" => "error", 
+                    'message' => 'harap unggah KTP dan SIM terlebih dahulu'
+                ], 422);
+            }
              
 
             $car = Datacar::where('id', $request->data_car_id)
