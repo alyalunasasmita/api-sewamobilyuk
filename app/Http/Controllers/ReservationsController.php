@@ -66,49 +66,57 @@ class ReservationsController extends Controller
 
         $user = $request->attributes->get('user');
 
-        try {
+        
+        //validasi rental aktif
+        $hasActiveRental = Reservation::where('user_id', $user->id)->whereIn('reservations_status', ['confirmed', 'on-going'])->exists(); 
+        if ($hasActiveRental && !$request->has('confirm_override')){
+            return response()->json([
+                'status' => 'warning', 
+                'message' => 'kamu masih punya rental yang aktif, yakin akan membuat rental baru?'
+            ], 200);
+        }
 
-            DB::beginTransaction();
+        //validasi data berkas yang dibutuhkan 
+        if(blank($user->id_card) || blank($user->drive_licence)) {
+            return response()->json([
+                "status" => "error", 
+                'message' => 'harap unggah KTP dan SIM terlebih dahulu'
+                ], 422);
+                }
 
             //validasi jarak
-            
             $branches = Branch::where('is_active', true)->get();
             $nearestBranch = null;
             $nearestDistance = PHP_FLOAT_MAX;
             foreach ($branches as $branch) {
-
+        
                 $distance = $distanceService->calculate(
                     $request->latitude,
                     $request->longitude,
                     $branch->latitude,
                     $branch->longitude
                 );
-
+        
                 if ($distance < $nearestDistance) {
                     $nearestDistance = $distance;
                     $nearestBranch = $branch;
                 }
             }
-
-            if (!$nearestBranch) {
-                throw new \Exception('Cabang tidak ditemukan');
-            }
-
-            if ($nearestDistance > 20) {
-                throw new \Exception(
-                    'Maaf, layanan belum tersedia di lokasi Anda'
-                );
-            }
-
-            //validasi data berkas yang dibutuhkan 
         
-            if(blank($user->id_card) || blank($user->drive_licence)) {
-                return response()->json([
-                    "status" => "error", 
-                    'message' => 'harap unggah KTP dan SIM terlebih dahulu'
-                ], 422);
-            }
-             
+                if (!$nearestBranch) {
+                    throw new \Exception('Cabang tidak ditemukan');
+                }
+        
+                if ($nearestDistance > 20) {
+                    throw new \Exception(
+                        'Maaf, layanan belum tersedia di lokasi Anda'
+                    );
+                }
+
+        try {
+
+            DB::beginTransaction();
+
             //mencegah double booking
 
             $car = Datacar::where('id', $request->data_car_id)
@@ -117,7 +125,7 @@ class ReservationsController extends Controller
                 ->first();
 
             if (!$car) {
-                throw new \Exception('Mobil tidak tersedia');
+                throw new \Exception('Mobil sudah di booking, silahan pilih mobil yang masih tersedia');
             }
 
             $isBooked = Reservation::where('data_car_id', $request->data_car_id)
@@ -135,13 +143,6 @@ class ReservationsController extends Controller
                 throw new \Exception('Mobil sudah direservasi pada tanggal tersebut');
             }
 
-            $hasActiveRental = Reservation::where('user_id', $user->id)->whereIn('reservations_status', ['confirmed', 'on going'])->exists(); 
-            if ($hasActiveRental && !$request->has('confirm_override')){
-                return response()->json([
-                    'status' => 'warning', 
-                    'message' => 'kamu masih punya rental yang aktif, yakin akan membuat rental baru?'
-                ], 200);
-            }
 
             $start = Carbon::parse($request->start_date);
             $end = Carbon::parse($request->end_date);
@@ -155,7 +156,7 @@ class ReservationsController extends Controller
 
             $reservation = Reservation::create([
                 'user_id' => $user->id,
-                'branch_id' => $nearestBranch,
+                'branch_id' => $nearestBranch->id,
                 'data_car_id' => $request->data_car_id,
                 'start_date' => $start,
                 'end_date' => $end,
@@ -226,7 +227,7 @@ class ReservationsController extends Controller
         }
     }
 
-
+ 
     /**
      * Display the specified resource.
      */
