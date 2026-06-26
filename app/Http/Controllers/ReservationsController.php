@@ -56,6 +56,7 @@ class ReservationsController extends Controller
     public function store(Request $request, DistanceService $distanceService)
     {
         $request->validate([
+            'branch_id'     => 'required',
             'data_car_id'    => 'required|exists:data_cars,id',
             'start_date'     => 'required|date',
             'end_date'       => 'required|date|after_or_equal:start_date',
@@ -164,7 +165,7 @@ class ReservationsController extends Controller
 
             $reservation = Reservation::create([
                 'user_id' => $user->id,
-                'branch_id' => $nearestBranch->id,
+                'branch_id' => $request->branch_id,
                 'data_car_id' => $request->data_car_id,
                 'start_date' => $start,
                 'end_date' => $end,
