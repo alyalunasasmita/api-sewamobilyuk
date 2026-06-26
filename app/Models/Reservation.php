@@ -27,7 +27,8 @@ class Reservation extends Model
         'rejected_at', 
         'delivery_fee',
         'pickupMethod', 
-        'cust_address'
+        'cust_address', 
+        'branch_id'
     ];
 
     public function user()
