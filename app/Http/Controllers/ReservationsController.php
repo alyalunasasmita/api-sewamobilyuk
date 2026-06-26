@@ -56,12 +56,16 @@ class ReservationsController extends Controller
     public function store(Request $request, DistanceService $distanceService)
     {
         $request->validate([
-            'data_car_id' => 'required|exists:data_cars,id',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'payment_method' => 'required|in:cash,transfer', 
-            'latitude' => 'required|numeric', 
-            'longitude' => 'required|numeric'
+            'data_car_id'    => 'required|exists:data_cars,id',
+            'start_date'     => 'required|date',
+            'end_date'       => 'required|date|after_or_equal:start_date',
+            'payment_method' => 'required|in:cash,transfer',
+
+            'latitude'       => 'required|numeric',
+            'longitude'      => 'required|numeric',
+
+            'pickupMethod'   => 'required|in:cabang,antar',
+            'deliveryAddress'=> 'nullable|string'
         ]);
 
         $user = $request->attributes->get('user');
@@ -118,7 +122,6 @@ class ReservationsController extends Controller
             DB::beginTransaction();
 
             //mencegah double booking
-
             $car = Datacar::where('id', $request->data_car_id)
                 ->where('availability_status', 'available')
                 ->lockForUpdate()
@@ -143,16 +146,21 @@ class ReservationsController extends Controller
                 throw new \Exception('Mobil sudah direservasi pada tanggal tersebut');
             }
 
+            $delivery_fee = 0 ;
+            if ($request->pickupMethod === 'antar') {
+                $delivery_fee = round($nearestDistance * 5000);
+            }
 
             $start = Carbon::parse($request->start_date);
             $end = Carbon::parse($request->end_date);
-
             $count_days = max(1, $start->diffInDays($end));
-            $total_price = $car->price * $count_days;
+            $rental_price = $car->price * $count_days;
+            $total_price = $rental_price + $delivery_fee;
 
             $reservationStatus = $request->payment_method === 'cash'
             ? 'pending_cash'
             : 'waiting_payment';
+
 
             $reservation = Reservation::create([
                 'user_id' => $user->id,
@@ -162,6 +170,9 @@ class ReservationsController extends Controller
                 'end_date' => $end,
                 'count_days' => $count_days,
                 'total_price' => $total_price,
+                'delivery_fee' => $delivery_fee, 
+                'pickupMethod' => $request->pickupMethod,
+                'cust_address' => $request->pickupMethod === 'antar'? $request->deliveryAddress: null,
                 'reservations_status' => $reservationStatus,
             ]);
 
@@ -174,7 +185,6 @@ class ReservationsController extends Controller
 
             $tax = $total_price * 0.10;
             $amount = round($total_price + $tax);
-
             $paymentStatus = $request->payment_method === 'cash' ? 'pending' : 'waiting_upload';
 
             $payment = Payment::create([
@@ -199,9 +209,7 @@ class ReservationsController extends Controller
                 'title' => 'Reservasi Berhasil',
                 'message' => $message
             ]);
-
             DB::commit();
-
             return response()->json([
                 'status' => 'success',
                 'message' => 'Reservasi berhasil dibuat',
@@ -213,12 +221,7 @@ class ReservationsController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
-
             DB::rollBack();
-
-            \Log::error('RESERVATION ERROR', [
-                'message' => $e->getMessage()
-            ]);
 
             return response()->json([
                 'status' => 'error',
@@ -278,7 +281,7 @@ class ReservationsController extends Controller
             ], 404);
         }
 
-        $allowedStatuses = ['waiting_confirmation', 'waiting_upload', 'pending_cash', 'confirmed'];
+        $allowedStatuses = ['waiting_payment','pending_cash','waiting_confirmation','confirmed','waiting_upload'];
 
         if (!in_array($reservation->reservations_status, $allowedStatuses)) {
             return response()->json([
@@ -288,14 +291,6 @@ class ReservationsController extends Controller
         }
 
         $startDate = Carbon::parse($reservation->start_date)->startOfDay();
-        $today = now()->startOfDay();
-
-        if ($today->gte($startDate->copy()->subDay())) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'reservasi tidak dapat dibatalkan mulai H-1'
-            ], 400);
-        }
 
         try {
             \DB::beginTransaction();

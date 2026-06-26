@@ -24,7 +24,10 @@ class Reservation extends Model
         'returned_at',
         'late_days',
         'penalty_amount',
-        'rejected_at'
+        'rejected_at', 
+        'delivery_fee',
+        'pickupMethod', 
+        'cust_address'
     ];
 
     public function user()

@@ -15,49 +15,46 @@ use Carbon\Carbon;
 
 class PaymentsController extends Controller
 {
-    public function upload_bukti(
-    Request $request,
-    ImageServices $imageServices,
-    Payment $payment
-) {
+    public function upload_bukti(Request $request,ImageServices $imageServices,Payment $payment)
+    {
 
-    $request->validate([
-        'proof_payment' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048'
-    ]);
+        $request->validate([
+            'proof_payment' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048'
+        ]);
 
-    if ($payment->status !== 'waiting_upload') {
+        if ($payment->status !== 'waiting_upload') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'pengiriman bukti transfer sudah dilakukan'
+            ], 400);
+        }
+
+        $image = $imageServices->uploadAndResize(
+            $request->file('proof_payment'),
+            'bukti_pembayaran'
+        );
+
+        $payment->update([
+            'proof_payment' => $image,
+            'status' => 'paid'
+        ]);
+
+
+        $payment->reservation->update([
+            'reservations_status' => 'waiting_confirmation'
+        ]);
+
+        Notification::create([
+            'user_id' => $payment->user_id,
+            'title' => 'Bukti Transfer Terkirim',
+            'message' => 'Bukti transfer berhasil dikirim dan sedang menunggu verifikasi admin.'
+        ]);
+
         return response()->json([
-            'status' => 'error',
-            'message' => 'pengiriman bukti transfer sudah dilakukan'
-        ], 400);
+            'status' => 'success',
+            'message' => 'Bukti transfer berhasil diupload',
+            'payment' => $payment->fresh(), 
+            
+        ]);
     }
-
-    $image = $imageServices->uploadAndResize(
-        $request->file('proof_payment'),
-        'bukti_pembayaran'
-    );
-
-    $payment->update([
-        'proof_payment' => $image,
-        'status' => 'paid'
-    ]);
-
-
-    $payment->reservation->update([
-        'reservations_status' => 'waiting_confirmation'
-    ]);
-
-    Notification::create([
-        'user_id' => $payment->user_id,
-        'title' => 'Bukti Transfer Terkirim',
-        'message' => 'Bukti transfer berhasil dikirim dan sedang menunggu verifikasi admin.'
-    ]);
-
-    return response()->json([
-        'status' => 'success',
-        'message' => 'Bukti transfer berhasil diupload',
-        'payment' => $payment->fresh(), 
-        
-    ]);
-}
 }
